@@ -152,6 +152,121 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        Service: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'ID único del servicio',
+            },
+            name: {
+              type: 'string',
+              description: 'Nombre del servicio',
+            },
+            categoryId: {
+              type: 'string',
+              description: 'ID de la categoría',
+            },
+            montoEstimado: {
+              type: 'number',
+              description: 'Monto estimado mensual',
+            },
+            estado: {
+              type: 'string',
+              enum: ['ACTIVO', 'VENCIDO', 'PENDIENTE'],
+              description: 'Estado del servicio',
+            },
+            proximoPago: {
+              type: 'string',
+              format: 'date',
+              description: 'Fecha del próximo pago',
+            },
+            userId: {
+              type: 'string',
+              description: 'ID del usuario propietario',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
+        DashboardOverview: {
+          type: 'object',
+          properties: {
+            totalServices: {
+              type: 'integer',
+              description: 'Total de servicios activos',
+            },
+            totalEstimatedCost: {
+              type: 'number',
+              description: 'Suma de montos estimados mensuales',
+            },
+            totalPaidThisMonth: {
+              type: 'number',
+              description: 'Total pagado en el mes actual',
+            },
+            pendingPayments: {
+              type: 'integer',
+              description: 'Cantidad de pagos pendientes',
+            },
+            overduePayments: {
+              type: 'integer',
+              description: 'Cantidad de pagos vencidos',
+            },
+          },
+        },
+        ExpenseByCategory: {
+          type: 'object',
+          properties: {
+            categoryId: {
+              type: 'string',
+            },
+            categoryName: {
+              type: 'string',
+            },
+            color: {
+              type: 'string',
+            },
+            totalAmount: {
+              type: 'number',
+              description: 'Total gastado en esta categoría',
+            },
+            servicesCount: {
+              type: 'integer',
+              description: 'Cantidad de servicios en esta categoría',
+            },
+            percentage: {
+              type: 'number',
+              description: 'Porcentaje del total de gastos',
+            },
+          },
+        },
+        PaymentTrend: {
+          type: 'object',
+          properties: {
+            month: {
+              type: 'string',
+              description: 'Mes en formato YYYY-MM',
+            },
+            totalPaid: {
+              type: 'number',
+              description: 'Total pagado en el mes',
+            },
+            totalEstimated: {
+              type: 'number',
+              description: 'Total estimado para el mes',
+            },
+            variance: {
+              type: 'number',
+              description: 'Diferencia entre pagado y estimado',
+            },
+          },
+        },
       },
     },
   },

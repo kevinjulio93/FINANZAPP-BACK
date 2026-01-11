@@ -25,7 +25,7 @@ export class CategoryController {
 
     async getCategories(req: any, res: any): Promise<any> {
         try {
-            const userId = req.user.id; // Assuming user ID is available in req.user
+            const userId = req.user.id;
             const categories = await this.categoryService.getCategoriesByUserId(userId);
             return res.status(200).json(categories);
         } catch (error) {

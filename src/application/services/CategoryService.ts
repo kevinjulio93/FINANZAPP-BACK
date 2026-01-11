@@ -11,11 +11,13 @@ export class CategoryService {
     }
 
     async getCategoriesByUserId(userId: string): Promise<ICategory[]> {
-        return this.categoryRepository.findByUserId(userId);
+        const result = await this.categoryRepository.findByUserId(userId);
+        return result;
     }
 
     async getCategoryById(id: string): Promise<ICategory | null> {
-        return this.categoryRepository.findById(id);
+        const result = await this.categoryRepository.findById(id);
+        return result;
     }
 
     async updateCategory(id: string, data: Partial<{ name: string; color: string; userId: string }>): Promise<ICategory | null> {
