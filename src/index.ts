@@ -7,6 +7,7 @@ import categoryRoutes from './presentation/routes/category.routes';
 import serviceRoutes from './presentation/routes/service.routes';
 import dashboardRoutes from './presentation/routes/dashboard.routes';
 import creditRoutes from './presentation/routes/credit.routes';
+import pagoRoutes from './presentation/routes/pago.routes';
 import { setupSwagger } from './config/swagger';
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/credits', creditRoutes);
+app.use('/api/pagos', pagoRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

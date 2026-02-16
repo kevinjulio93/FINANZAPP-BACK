@@ -73,4 +73,65 @@ router.post('/', (req, res) => controller.createCategory(req, res));
  */
 router.get('/', (req, res) => controller.getCategories(req, res));
 
+/**
+ * @swagger
+ * /api/categories/{id}:
+ *   put:
+ *     summary: Actualizar una categoría
+ *     tags: [Categories]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la categoría a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Category' # Reusing category schema
+ *     responses:
+ *       200:
+ *         description: Categoría actualizada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
+ *       404:
+ *         description: Categoría no encontrada
+ *       401:
+ *         description: No autenticado
+ */
+router.put('/:id', (req, res) => controller.updateCategory(req, res));
+
+
+/**
+ * @swagger
+ * /api/categories/{id}:
+ *   delete:
+ *     summary: Eliminar una categoría
+ *     tags: [Categories]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la categoría a eliminar
+ *     responses:
+ *       204:
+ *         description: Categoría eliminada
+ *       404:
+ *         description: Categoría no encontrada
+ *       401:
+ *         description: No autenticado
+ */
+router.delete('/:id', (req, res) => controller.deleteCategory(req, res));
+
 export default router;

@@ -16,7 +16,7 @@ const createServiceSchema = z.object({
     montoEstimado: z.number().nonnegative(),
     fechaUltimoPago: z.string().optional(),
     categoryId: z.string(),
-    estado: z.enum(Object.values(EstadoServicio) as [string, ...string[]]),
+    estado: z.enum(Object.values(EstadoServicio) as [string, ...string[]]).optional(),
 });
 
 export class ServiceController {
@@ -33,11 +33,11 @@ export class ServiceController {
             const { name, montoEstimado, fechaUltimoPago, categoryId, estado } = createServiceSchema.parse(req.body);
             const userId = req.user!.id;
             const category = await this.categoryService.getCategoryById(categoryId);
-            
+
             if (!category) {
                 return res.status(404).json({ message: "Categoría no encontrada" });
             }
-            
+
             if (category.userId.toString() !== userId) {
                 return res.status(404).json({ message: "Categoría no encontrada" });
             }
@@ -47,7 +47,7 @@ export class ServiceController {
                 montoEstimado,
                 fechaUltimoPago: fechaUltimoPago ? new Date(fechaUltimoPago).toString() : new Date().toString(),
                 categoryId,
-                estado,
+                estado: estado || EstadoServicio.PENDIENTE,
                 userId,
             });
 
@@ -85,6 +85,80 @@ export class ServiceController {
             const userId = req.user!.id;
             const services = await this.serviceService.getServicesByUserId(userId);
             return res.status(200).json(services);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async duplicateService(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const serviceId = req.params.id;
+
+            const service = await this.serviceService.getServiceById(serviceId);
+            if (!service) {
+                return res.status(404).json({ message: "Servicio no encontrado" });
+            }
+
+            const category = await this.categoryService.getCategoryById(service.categoryId.toString());
+            if (!category || category.userId.toString() !== userId) {
+                return res.status(404).json({ message: "Servicio no encontrado" });
+            }
+
+            const newService = await this.serviceService.duplicateService(serviceId, userId);
+
+            return res.status(201).json(newService);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async updateService(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const serviceId = req.params.id;
+            const { name, montoEstimado, categoryId } = req.body;
+
+            const service = await this.serviceService.getServiceById(serviceId);
+            if (!service) {
+                return res.status(404).json({ message: "Servicio no encontrado" });
+            }
+
+            const category = await this.categoryService.getCategoryById(service.categoryId.toString());
+            if (!category || category.userId.toString() !== userId) {
+                return res.status(404).json({ message: "Servicio no encontrado" });
+            }
+
+            const updatedService = await this.serviceService.updateService(serviceId, {
+                name,
+                montoEstimado,
+                categoryId,
+            });
+
+            return res.status(200).json(updatedService);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async deleteService(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const serviceId = req.params.id;
+
+            const service = await this.serviceService.getServiceById(serviceId);
+            if (!service) {
+                return res.status(404).json({ message: "Servicio no encontrado" });
+            }
+
+            const category = await this.categoryService.getCategoryById(service.categoryId.toString());
+            if (!category || category.userId.toString() !== userId) {
+                return res.status(404).json({ message: "Servicio no encontrado" });
+            }
+
+            await this.serviceService.deleteService(serviceId);
+
+            return res.status(204).send();
         } catch (error) {
             return res.status(400).json({ message: (error as Error).message });
         }

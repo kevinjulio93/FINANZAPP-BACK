@@ -17,5 +17,8 @@ router.use(AuthenticationToken);
 router.post('/', (req, res) => serviceController.createService(req, res));
 router.get('/', (req, res) => serviceController.getServicesByUser(req, res));
 router.get('/category/:categoryId', (req, res) => serviceController.getServicesByCategory(req, res));
+router.post('/:id/duplicate', (req, res) => serviceController.duplicateService(req, res));
+router.put('/:id', (req, res) => serviceController.updateService(req, res));
+router.delete('/:id', (req, res) => serviceController.deleteService(req, res));
 
 export default router;

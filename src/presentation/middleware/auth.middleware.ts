@@ -15,7 +15,7 @@ export const AuthenticationToken = (req: AuthRequest, res: Response, next: NextF
         return res.status(401).json({ message: "Authentication token missing" });
     }
     try {
-        const decodedtoken = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string; email: string };
+        const decodedtoken = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as { userId: string; email: string };
         // Mapear userId a id para mantener consistencia
         req.user = {
             id: decodedtoken.userId,

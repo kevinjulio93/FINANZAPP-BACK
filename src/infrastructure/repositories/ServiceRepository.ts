@@ -5,7 +5,7 @@ import { IServiceRepository } from "../../domain/repositories/Interfaces/IServic
 import { CategoryModel } from "../models/Catergory.model";
 
 
-export class ServiceRepository implements IServiceRepository { 
+export class ServiceRepository implements IServiceRepository {
     async create(data: ICreateService, userId: string): Promise<IService> {
         const service = new ServiceModel({
             ...data,
@@ -22,14 +22,14 @@ export class ServiceRepository implements IServiceRepository {
     async findByUserId(userId: string): Promise<IService[]> {
         const userObjectId = new mongoose.Types.ObjectId(userId);
         const userCategoryIds = await CategoryModel.distinct('_id', { userId: userObjectId });
-        
-        return ServiceModel.find({ 
-            categoryId: { $in: userCategoryIds } 
+
+        return ServiceModel.find({
+            categoryId: { $in: userCategoryIds }
         }).lean() as Promise<IService[]>;
     }
 
     async findById(id: string): Promise<IService | null> {
-        return ServiceModel.findOne({ id }).lean() as Promise<IService | null>;
+        return ServiceModel.findById(id).lean() as Promise<IService | null>;
     }
 
     async update(id: string, data: Partial<ICreateService>): Promise<IService | null> {
@@ -37,7 +37,7 @@ export class ServiceRepository implements IServiceRepository {
     }
 
     async delete(id: string): Promise<boolean> {
-        await ServiceModel.findByIdAndDelete(id); 
+        await ServiceModel.findByIdAndDelete(id);
         return true;
     }
 
