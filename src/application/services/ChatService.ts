@@ -65,8 +65,26 @@ export class ChatService {
             }
         ];
 
+        // 0. Fetch financial context
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        let financialContext = "";
+
+        try {
+            const report = await this.pagoRepository.getPaymentReport(userId, currentMonth, currentYear);
+            if (report) {
+                financialContext = `Estado Financiero Actual (${currentMonth}/${currentYear}):
+- Total Gastado este mes: $${report.totalGastado}
+- Desglose por Categorías: ${report.porCategoria.map((c: any) => `${c.categoryName}: $${c.total}`).join(", ")}
+- Top 5 Gastos: ${report.topExpenses.map((t: any) => `${t.merchant} ($${t.amount})`).join(", ")}`;
+            }
+        } catch (error) {
+            console.error("Error fetching financial context:", error);
+        }
+
         // 1. Initial call to LLM
-        let aiResponse = await this.openAIService.generateResponse(userId, message, { history }, tools);
+        let aiResponse = await this.openAIService.generateResponse(userId, message, { history, financialContext }, tools);
 
         // 2. Handle tool calls if any
         if (aiResponse.tool_calls && aiResponse.tool_calls.length > 0) {
