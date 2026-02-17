@@ -19,8 +19,17 @@ export class PagoService {
         return this.pagoRepository.findByServiceId(serviceId);
     }
 
-    async getPagosByUserId(userId: string, search?: string) {
-        return this.pagoRepository.findByUserId(userId, search);
+    async getPagosByUserId(
+        userId: string,
+        filters: any,
+        page?: number,
+        limit?: number
+    ) {
+        return this.pagoRepository.findByUserId(userId, filters, page, limit);
+    }
+
+    async deletePagos(ids: string[]) {
+        return this.pagoRepository.deleteMany(ids);
     }
 
     async updatePago(id: string, data: Partial<ICreatePago>) {

@@ -42,5 +42,6 @@ router.get('/', (req, res) => pagoController.getPagos(req, res));
 router.get('/:id', (req, res) => pagoController.getPagoById(req, res));
 router.put('/:id', (req, res) => pagoController.updatePago(req, res));
 router.delete('/:id', (req, res) => pagoController.deletePago(req, res));
+router.post('/bulk-delete', (req, res) => pagoController.deletePagosBulk(req, res));
 
 export default router;

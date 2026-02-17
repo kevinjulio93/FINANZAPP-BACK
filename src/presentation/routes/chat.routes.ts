@@ -7,7 +7,7 @@ import { OpenAIService } from "../../infrastructure/services/OpenAIService";
 import { PagoRepository } from "../../infrastructure/repositories/PagoRepository";
 import { ServiceRepository } from "../../infrastructure/repositories/ServiceRepository";
 
-const router = Router();
+const router: Router = Router();
 
 // Dependency Injection (Manual for now)
 const pagoRepository = new PagoRepository();

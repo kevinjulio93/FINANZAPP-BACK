@@ -26,8 +26,21 @@ export class CategoryController {
     async getCategories(req: any, res: any): Promise<any> {
         try {
             const userId = req.user.id;
-            const categories = await this.categoryService.getCategoriesByUserId(userId);
-            return res.status(200).json(categories);
+            const { search, page = 1, limit = 10 } = req.query;
+
+            // If page is explicitly set to -1, return all (for dropdowns)
+            if (page === 'all' || page === '-1') {
+                const categories = await this.categoryService.getCategoriesByUserId(userId);
+                return res.status(200).json(categories);
+            }
+
+            const response = await this.categoryService.getCategoriesByUserIdPaginated(
+                userId,
+                search as string,
+                parseInt(page as string),
+                parseInt(limit as string)
+            );
+            return res.status(200).json(response);
         } catch (error) {
             return res.status(400).json({ message: (error as Error).message });
         }

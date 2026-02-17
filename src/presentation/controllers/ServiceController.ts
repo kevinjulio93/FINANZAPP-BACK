@@ -83,8 +83,22 @@ export class ServiceController {
     async getServicesByUser(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const userId = req.user!.id;
-            const services = await this.serviceService.getServicesByUserId(userId);
-            return res.status(200).json(services);
+            const { search, categoryId, page = 1, limit = 10 } = req.query;
+
+            // If page is explicitly set to -1 or all, return all (for dropdowns)
+            if (page === 'all' || page === '-1') {
+                const services = await this.serviceService.getServicesByUserId(userId);
+                return res.status(200).json(services);
+            }
+
+            const response = await this.serviceService.getServicesByUserIdPaginated(
+                userId,
+                search as string,
+                categoryId as string,
+                parseInt(page as string),
+                parseInt(limit as string)
+            );
+            return res.status(200).json(response);
         } catch (error) {
             return res.status(400).json({ message: (error as Error).message });
         }

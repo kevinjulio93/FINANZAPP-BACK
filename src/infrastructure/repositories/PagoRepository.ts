@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { IPagoRepository, ICreatePago } from "../../domain/repositories/Interfaces/IPagoRepository";
+import { IPagoRepository, ICreatePago, IPagoFilters, IPaginatedResponse } from "../../domain/repositories/Interfaces/IPagoRepository";
 import { PagoMensualModel, IPagoMensualDocument } from "../models/PagoMensual.model";
 import { ServiceModel } from "../models/Service.model";
 
@@ -25,26 +25,52 @@ export class PagoRepository implements IPagoRepository {
         return PagoMensualModel.find({ serviceId: new mongoose.Types.ObjectId(serviceId) });
     }
 
-    async findByUserId(userId: string, search?: string): Promise<IPagoMensualDocument[]> {
+    async findByUserId(
+        userId: string,
+        filters: IPagoFilters,
+        page: number = 1,
+        limit: number = 10
+    ): Promise<IPaginatedResponse<IPagoMensualDocument>> {
         const userObjectId = new mongoose.Types.ObjectId(userId);
+        const { search, serviceId, categoryId, mes, año } = filters;
 
-        // Get all services for this user's categories
+        // Get all services for this user's categories to verify ownership
         const userServices = await ServiceModel.find().populate({
             path: 'categoryId',
             match: { userId: userObjectId }
         });
 
-        const validServices = userServices.filter(service => service.categoryId);
-        const allServiceIds = validServices.map(service => service._id);
+        const validUserServices = userServices.filter(service => service.categoryId);
+        let allowedServiceIds = validUserServices.map(service => service._id);
+
+        // If categoryId filter is provided, restrict allowedServiceIds
+        if (categoryId) {
+            allowedServiceIds = validUserServices
+                .filter(s => s.categoryId._id.toString() === categoryId)
+                .map(s => s._id);
+        }
+
+        // If serviceId filter is provided, check if it's in allowed list
+        if (serviceId) {
+            const requestedServiceId = new mongoose.Types.ObjectId(serviceId);
+            if (allowedServiceIds.some(id => id.equals(requestedServiceId))) {
+                allowedServiceIds = [requestedServiceId];
+            } else {
+                // Requested service doesn't belong to user
+                allowedServiceIds = [];
+            }
+        }
 
         let query: any = {
-            serviceId: { $in: allServiceIds }
+            serviceId: { $in: allowedServiceIds }
         };
+
+        if (mes) query.mes = mes;
+        if (año) query.año = año;
 
         if (search) {
             const searchRegex = new RegExp(search, 'i');
-            // Filter services that match the name
-            const matchingServiceIds = validServices
+            const matchingServiceIds = validUserServices
                 .filter(s => searchRegex.test(s.name))
                 .map(s => s._id);
 
@@ -60,12 +86,26 @@ export class PagoRepository implements IPagoRepository {
             }
         }
 
-        return PagoMensualModel.find(query).populate({
-            path: 'serviceId',
-            populate: {
-                path: 'categoryId'
-            }
-        }).sort({ fechaPago: -1 });
+        const skip = (page - 1) * limit;
+        const total = await PagoMensualModel.countDocuments(query);
+        const data = await PagoMensualModel.find(query)
+            .populate({
+                path: 'serviceId',
+                populate: {
+                    path: 'categoryId'
+                }
+            })
+            .sort({ fechaPago: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        };
     }
 
     async update(id: string, data: Partial<ICreatePago>): Promise<IPagoMensualDocument | null> {
@@ -79,6 +119,13 @@ export class PagoRepository implements IPagoRepository {
     async delete(id: string): Promise<boolean> {
         await PagoMensualModel.findByIdAndDelete(id);
         return true;
+    }
+
+    async deleteMany(ids: string[]): Promise<number> {
+        const result = await PagoMensualModel.deleteMany({
+            _id: { $in: ids.map(id => new mongoose.Types.ObjectId(id)) }
+        });
+        return result.deletedCount;
     }
 
     // Métodos para reportes

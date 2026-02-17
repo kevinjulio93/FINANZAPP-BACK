@@ -11,6 +11,8 @@ import dashboardRoutes from './presentation/routes/dashboard.routes';
 import creditRoutes from './presentation/routes/credit.routes';
 import pagoRoutes from './presentation/routes/pago.routes';
 import chatRoutes from './presentation/routes/chat.routes';
+import importRoutes from './presentation/routes/import.routes';
+import comparisonRoutes from './presentation/routes/comparison.routes';
 import { setupSwagger } from './config/swagger';
 
 
@@ -33,6 +35,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/credits', creditRoutes);
 app.use('/api/pagos', pagoRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/import', importRoutes);
+app.use('/api/comparison', comparisonRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

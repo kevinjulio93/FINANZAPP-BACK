@@ -12,13 +12,28 @@ export class CreditRepository implements ICreditRepository {
             saldoActual: data.valorInicial,
         });
         await credit.save();
-        return credit.toObject() as ICredit;
+        return {
+            id: credit._id.toString(),
+            userId: credit.userId.toString(),
+            nombre: credit.nombre,
+            valorInicial: credit.valorInicial,
+            saldoActual: credit.saldoActual,
+            tasaInteresAnual: credit.tasaInteresAnual,
+            plazoMeses: credit.plazoMeses,
+            cuotaMensual: credit.cuotaMensual,
+            subsidioPorcentaje: credit.subsidioPorcentaje,
+            fechaInicio: credit.fechaInicio,
+            estado: credit.estado,
+            tipoPago: credit.tipoPago,
+            createdAt: credit.createdAt,
+            updatedAt: credit.updatedAt,
+        } as ICredit;
     }
 
     async findById(id: string): Promise<ICredit | null> {
         const credit = await CreditModel.findById(id).lean();
         if (!credit) return null;
-        
+
         return {
             id: (credit._id as any).toString(),
             userId: credit.userId.toString(),
@@ -40,7 +55,7 @@ export class CreditRepository implements ICreditRepository {
     async findByUserId(userId: string): Promise<ICredit[]> {
         const userObjectId = new mongoose.Types.ObjectId(userId);
         const credits = await CreditModel.find({ userId: userObjectId }).lean();
-        
+
         return credits.map(credit => ({
             id: (credit._id as any).toString(),
             userId: credit.userId.toString(),
@@ -62,7 +77,7 @@ export class CreditRepository implements ICreditRepository {
     async update(id: string, data: Partial<ICredit>): Promise<ICredit | null> {
         const credit = await CreditModel.findByIdAndUpdate(id, data, { new: true }).lean();
         if (!credit) return null;
-        
+
         return {
             id: (credit._id as any).toString(),
             userId: credit.userId.toString(),
@@ -93,7 +108,7 @@ export class CreditRepository implements ICreditRepository {
             creditId: new mongoose.Types.ObjectId(data.creditId),
         });
         await abono.save();
-        
+
         return {
             id: abono._id.toString(),
             creditId: abono.creditId.toString(),
@@ -115,7 +130,7 @@ export class CreditRepository implements ICreditRepository {
             .find({ creditId: creditObjectId })
             .sort({ fecha: -1 })
             .lean();
-        
+
         return abonos.map(abono => ({
             id: (abono._id as any).toString(),
             creditId: abono.creditId.toString(),

@@ -1,5 +1,6 @@
 import { ICategory, ICreateCategory } from "../../domain/entities/Category";
 import { ICategoryRepository } from "../../domain/repositories/Interfaces/ICategoryRepository";
+import { IPaginatedResponse } from "../../domain/repositories/Interfaces/IPagoRepository";
 import { CategoryModel } from "../models/Catergory.model";
 import { ServiceModel } from "../models/Service.model";
 import mongoose from "mongoose";
@@ -26,6 +27,42 @@ export class CategoryRepository implements ICategoryRepository {
             userId: cat.userId,
         })) as ICategory[];
         return result;
+    }
+
+    async findByUserIdPaginated(
+        userId: string,
+        search?: string,
+        page: number = 1,
+        limit: number = 10
+    ): Promise<IPaginatedResponse<ICategory>> {
+        const objectId = new mongoose.Types.ObjectId(userId);
+        let query: any = { userId: objectId };
+
+        if (search) {
+            query.name = { $regex: new RegExp(search, 'i') };
+        }
+
+        const skip = (page - 1) * limit;
+        const total = await CategoryModel.countDocuments(query);
+        const categories = await CategoryModel.find(query)
+            .sort({ name: 1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        const data = categories.map(cat => ({
+            ...cat,
+            id: cat._id.toString(),
+            userId: cat.userId,
+        })) as ICategory[];
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        };
     }
 
     async findById(id: string): Promise<ICategory | null> {

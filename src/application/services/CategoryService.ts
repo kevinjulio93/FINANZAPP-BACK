@@ -15,6 +15,10 @@ export class CategoryService {
         return result;
     }
 
+    async getCategoriesByUserIdPaginated(userId: string, search?: string, page?: number, limit?: number) {
+        return this.categoryRepository.findByUserIdPaginated(userId, search, page, limit);
+    }
+
     async getCategoryById(id: string): Promise<ICategory | null> {
         const result = await this.categoryRepository.findById(id);
         return result;
@@ -23,7 +27,7 @@ export class CategoryService {
     async updateCategory(id: string, data: Partial<{ name: string; color: string; userId: string }>): Promise<ICategory | null> {
         return this.categoryRepository.update(id, data);
     }
-    
+
     async deleteCategory(id: string): Promise<boolean> {
         const result = await this.categoryRepository.delete(id);
         return result;

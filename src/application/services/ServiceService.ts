@@ -18,6 +18,10 @@ export class ServiceService {
         return this.serviceRepository.findByUserId(userId);
     }
 
+    async getServicesByUserIdPaginated(userId: string, search?: string, categoryId?: string, page?: number, limit?: number) {
+        return this.serviceRepository.findByUserIdPaginated(userId, search, categoryId, page, limit);
+    }
+
     async getServicesByCategoryId(categoryId: string) {
         return this.serviceRepository.findByCategoryId(categoryId);
     }
@@ -26,8 +30,12 @@ export class ServiceService {
         return this.serviceRepository.findById(id);
     }
 
-    async updateService(id: string, data: Partial<{ name: string; montoEstimado: number; fechaUltimoPago?: string; categoryId: string; estado: string }>) {
-        return this.serviceRepository.update(id, data);
+    async updateService(id: string, data: any) {
+        const updateData = { ...data };
+        if (data.categoryId) {
+            updateData.categoryId = new mongoose.Types.ObjectId(data.categoryId);
+        }
+        return this.serviceRepository.update(id, updateData);
     }
 
     async deleteService(id: string) {
