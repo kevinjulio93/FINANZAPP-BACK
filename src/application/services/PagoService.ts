@@ -19,8 +19,8 @@ export class PagoService {
         return this.pagoRepository.findByServiceId(serviceId);
     }
 
-    async getPagosByUserId(userId: string) {
-        return this.pagoRepository.findByUserId(userId);
+    async getPagosByUserId(userId: string, search?: string) {
+        return this.pagoRepository.findByUserId(userId, search);
     }
 
     async updatePago(id: string, data: Partial<ICreatePago>) {

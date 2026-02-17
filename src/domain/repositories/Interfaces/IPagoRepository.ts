@@ -15,7 +15,7 @@ export interface IPagoRepository {
     findById(id: string): Promise<IPagoMensualDocument | null>;
     findAll(): Promise<IPagoMensualDocument[]>;
     findByServiceId(serviceId: string): Promise<IPagoMensualDocument[]>;
-    findByUserId(userId: string): Promise<IPagoMensualDocument[]>;
+    findByUserId(userId: string, search?: string): Promise<IPagoMensualDocument[]>;
     update(id: string, data: Partial<ICreatePago>): Promise<IPagoMensualDocument | null>;
     delete(id: string): Promise<boolean>;
 

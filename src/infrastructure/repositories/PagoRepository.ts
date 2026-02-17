@@ -25,7 +25,7 @@ export class PagoRepository implements IPagoRepository {
         return PagoMensualModel.find({ serviceId: new mongoose.Types.ObjectId(serviceId) });
     }
 
-    async findByUserId(userId: string): Promise<IPagoMensualDocument[]> {
+    async findByUserId(userId: string, search?: string): Promise<IPagoMensualDocument[]> {
         const userObjectId = new mongoose.Types.ObjectId(userId);
 
         // Get all services for this user's categories
@@ -34,13 +34,33 @@ export class PagoRepository implements IPagoRepository {
             match: { userId: userObjectId }
         });
 
-        const serviceIds = userServices
-            .filter(service => service.categoryId) // Only services with matching category
-            .map(service => service._id);
+        const validServices = userServices.filter(service => service.categoryId);
+        const allServiceIds = validServices.map(service => service._id);
 
-        return PagoMensualModel.find({
-            serviceId: { $in: serviceIds }
-        }).populate({
+        let query: any = {
+            serviceId: { $in: allServiceIds }
+        };
+
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+            // Filter services that match the name
+            const matchingServiceIds = validServices
+                .filter(s => searchRegex.test(s.name))
+                .map(s => s._id);
+
+            query['$or'] = [
+                { serviceId: { $in: matchingServiceIds } },
+                { notas: { $regex: searchRegex } },
+                { metodoPago: { $regex: searchRegex } }
+            ];
+
+            const numericSearch = parseFloat(search);
+            if (!isNaN(numericSearch)) {
+                query['$or'].push({ valorPagado: numericSearch });
+            }
+        }
+
+        return PagoMensualModel.find(query).populate({
             path: 'serviceId',
             populate: {
                 path: 'categoryId'
@@ -374,12 +394,56 @@ export class PagoRepository implements IPagoRepository {
             };
         }
 
+        // 3. Top Expenses
+        const topExpenses = await PagoMensualModel.find(matchQuery)
+            .sort({ valorPagado: -1 })
+            .limit(5)
+            .populate({
+                path: 'serviceId',
+                select: 'name categoryId',
+                populate: { path: 'categoryId', select: 'name color' }
+            });
+
+        // 4. Monthly Average & Breakdown
+        let averageMonthly = 0;
+        let activeMonths = 0;
+        let monthlyBreakdown: Array<{ month: number; total: number }> = [];
+
+        if (!mes) {
+            const monthlyStats = await PagoMensualModel.aggregate([
+                { $match: matchQuery },
+                { $group: { _id: "$mes", total: { $sum: "$valorPagado" } } },
+                { $sort: { _id: 1 } }
+            ]);
+
+            monthlyBreakdown = monthlyStats.map(s => ({ month: s._id, total: s.total }));
+            activeMonths = monthlyStats.length;
+
+            if (activeMonths > 0) {
+                averageMonthly = totalGastado / activeMonths;
+            }
+        } else {
+            averageMonthly = totalGastado;
+            activeMonths = 1;
+        }
+
         return {
             mes,
             año,
             totalGastado,
             porCategoria: report,
-            trend
+            trend,
+            topExpenses: topExpenses.map(p => ({
+                id: p._id,
+                merchant: (p.serviceId as any)?.name || "Unknown",
+                category: (p.serviceId as any)?.categoryId?.name || "Other",
+                categoryColor: (p.serviceId as any)?.categoryId?.color || "#6B7280",
+                amount: p.valorPagado,
+                icon: "other"
+            })),
+            averageMonthly,
+            activeMonths,
+            monthlyBreakdown
         };
     }
 }

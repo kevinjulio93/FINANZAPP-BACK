@@ -64,7 +64,8 @@ export class PagoController {
     async getPagos(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const userId = req.user!.id;
-            const pagos = await this.pagoService.getPagosByUserId(userId);
+            const { search } = req.query;
+            const pagos = await this.pagoService.getPagosByUserId(userId, search as string);
             return res.status(200).json(pagos);
         } catch (error) {
             return res.status(400).json({ message: (error as Error).message });
