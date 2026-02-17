@@ -48,8 +48,56 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        monthlyBudget: user.monthlyBudget || 0,
         createdAt: user.createdAt,
       }
+    };
+  }
+
+  async getCurrentUser(userId: string) {
+    const user = await this.userRepository.getUserById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      monthlyBudget: user.monthlyBudget || 0,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
+  async updateUser(userId: string, updates: { name?: string; email?: string; monthlyBudget?: number }) {
+    // Validar que el usuario existe
+    const existingUser = await this.userRepository.getUserById(userId);
+    if (!existingUser) {
+      throw new Error('User not found');
+    }
+
+    // Si se está actualizando el email, verificar que no esté en uso
+    if (updates.email && updates.email !== existingUser.email) {
+      const emailInUse = await this.userRepository.getUserByEmail(updates.email);
+      if (emailInUse) {
+        throw new Error('Email already in use');
+      }
+    }
+
+    // Actualizar el usuario
+    const updatedUser = await this.userRepository.updateUser(userId, updates);
+    if (!updatedUser) {
+      throw new Error('Failed to update user');
+    }
+
+    return {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      monthlyBudget: updatedUser.monthlyBudget || 0,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
     };
   }
 }

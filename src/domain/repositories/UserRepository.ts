@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 
 
 
-export class UserRepository  implements IUserRepository {
+export class UserRepository implements IUserRepository {
 
     async createUser(user: INewUser): Promise<IUser> {
         const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -29,5 +29,17 @@ export class UserRepository  implements IUserRepository {
 
     async getUserById(id: string): Promise<IUser | null> {
         return UserModel.findOne({ id }) as Promise<IUser | null>;
+    }
+
+    async updateUser(id: string, updates: Partial<IUser>): Promise<IUser | null> {
+        const updatedUser = await UserModel.findOneAndUpdate(
+            { id },
+            {
+                ...updates,
+                updatedAt: new Date()
+            },
+            { new: true } // Retorna el documento actualizado
+        );
+        return updatedUser ? (updatedUser.toObject() as IUser) : null;
     }
 }
