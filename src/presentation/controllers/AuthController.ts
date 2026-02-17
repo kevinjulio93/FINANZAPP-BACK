@@ -1,4 +1,4 @@
-import {Request, Response} from 'express';
+import { Request, Response } from 'express';
 import z from 'zod';
 import { AuthService } from '../../application/services/AuthService';
 
@@ -27,8 +27,8 @@ export class AuthController {
     async login(req: Request, res: Response): Promise<Response> {
         try {
             const { email, password } = loginSchema.parse(req.body);
-            const token = await this.authService.login({ email, password });
-            return res.status(200).json({ token });
+            const result = await this.authService.login({ email, password });
+            return res.status(200).json(result);
         } catch (error) {
             return res.status(400).json({ message: (error as Error).message });
         }

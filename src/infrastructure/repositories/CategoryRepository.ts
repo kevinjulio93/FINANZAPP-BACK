@@ -1,11 +1,12 @@
 import { ICategory, ICreateCategory } from "../../domain/entities/Category";
 import { ICategoryRepository } from "../../domain/repositories/Interfaces/ICategoryRepository";
 import { CategoryModel } from "../models/Catergory.model";
+import { ServiceModel } from "../models/Service.model";
 import mongoose from "mongoose";
 
 
 export class CategoryRepository implements ICategoryRepository {
-    
+
     async create(data: ICreateCategory): Promise<ICategory> {
         const category = new CategoryModel({
             ...data,
@@ -16,7 +17,7 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     async findByUserId(userId: string): Promise<ICategory[]> {
-        
+
         const objectId = new mongoose.Types.ObjectId(userId);
         const categories = await CategoryModel.find({ userId: objectId }).lean();
         const result = categories.map(cat => ({
@@ -29,11 +30,11 @@ export class CategoryRepository implements ICategoryRepository {
 
     async findById(id: string): Promise<ICategory | null> {
         try {
-            
+
             const category = await CategoryModel.findById(id).lean();
-            
+
             if (!category) return null;
-            
+
             const result = {
                 id: (category._id as any).toString(),
                 name: category.name,
@@ -42,7 +43,7 @@ export class CategoryRepository implements ICategoryRepository {
                 createdAt: category.createdAt,
                 updatedAt: category.updatedAt,
             } as ICategory;
-            
+
             return result;
         } catch (error) {
             return null;
@@ -50,12 +51,37 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     async update(id: string, data: Partial<ICreateCategory>): Promise<ICategory | null> {
-        return CategoryModel.findByIdAndUpdate(id, data, { new: true }).lean() as Promise<ICategory | null>;
+        const category = await CategoryModel.findByIdAndUpdate(id, data, { new: true }).lean();
+        if (!category) return null;
+        return {
+            ...category,
+            id: (category._id as any).toString(),
+            userId: (category as any).userId.toString(),
+        } as unknown as ICategory;
     }
 
     async delete(id: string): Promise<boolean> {
-        await CategoryModel.findByIdAndDelete(id); 
-        return true;
+        try {
+            // 1. Obtener todos los servicios de esta categoría
+            const services = await ServiceModel.find({ categoryId: id });
+            const serviceIds = services.map(s => s._id);
+
+            // 2. Eliminar todos los pagos asociados a esos servicios
+            if (serviceIds.length > 0) {
+                await mongoose.model('PagoMensual').deleteMany({ serviceId: { $in: serviceIds } });
+            }
+
+            // 3. Eliminar los servicios
+            await ServiceModel.deleteMany({ categoryId: id });
+
+            // 4. Eliminar la categoría
+            await CategoryModel.findByIdAndDelete(id);
+
+            return true;
+        } catch (error) {
+            console.error('Error in CategoryRepository.delete:', error);
+            throw error;
+        }
     }
 
 

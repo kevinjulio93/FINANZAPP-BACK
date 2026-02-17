@@ -15,30 +15,63 @@ export class ServiceRepository implements IServiceRepository {
         return service.toObject() as IService;
     }
 
-    findByCategoryId(categoryId: string): Promise<IService[]> {
-        return ServiceModel.find({ categoryId }).lean() as Promise<IService[]>;
+    async findByCategoryId(categoryId: string): Promise<IService[]> {
+        const services = await ServiceModel.find({ categoryId }).lean();
+        return services.map(s => ({
+            ...s,
+            id: (s as any)._id.toString(),
+            categoryId: (s as any).categoryId.toString()
+        })) as unknown as IService[];
     }
 
     async findByUserId(userId: string): Promise<IService[]> {
         const userObjectId = new mongoose.Types.ObjectId(userId);
         const userCategoryIds = await CategoryModel.distinct('_id', { userId: userObjectId });
 
-        return ServiceModel.find({
+        const services = await ServiceModel.find({
             categoryId: { $in: userCategoryIds }
-        }).lean() as Promise<IService[]>;
+        }).lean();
+
+        return services.map(s => ({
+            ...s,
+            id: (s as any)._id.toString(),
+            categoryId: (s as any).categoryId.toString()
+        })) as unknown as IService[];
     }
 
     async findById(id: string): Promise<IService | null> {
-        return ServiceModel.findById(id).lean() as Promise<IService | null>;
+        const service = await ServiceModel.findById(id).lean();
+        if (!service) return null;
+        return {
+            ...service,
+            id: (service as any)._id.toString(),
+            categoryId: (service as any).categoryId.toString()
+        } as unknown as IService;
     }
 
     async update(id: string, data: Partial<ICreateService>): Promise<IService | null> {
-        return ServiceModel.findByIdAndUpdate(id, data, { new: true }).lean() as Promise<IService | null>;
+        const service = await ServiceModel.findByIdAndUpdate(id, data, { new: true }).lean();
+        if (!service) return null;
+        return {
+            ...service,
+            id: (service as any)._id.toString(),
+            categoryId: (service as any).categoryId.toString()
+        } as unknown as IService;
     }
 
     async delete(id: string): Promise<boolean> {
-        await ServiceModel.findByIdAndDelete(id);
-        return true;
+        try {
+            // Eliminar pagos asociados al servicio
+            await mongoose.model('PagoMensual').deleteMany({ serviceId: id });
+
+            // Eliminar el servicio
+            await ServiceModel.findByIdAndDelete(id);
+
+            return true;
+        } catch (error) {
+            console.error('Error in ServiceRepository.delete:', error);
+            throw error;
+        }
     }
 
     async addPagoMensual(serviceId: string, pago: IPagoMensual): Promise<IService | null> {

@@ -26,7 +26,17 @@ const pagoController = new PagoController(pagoService, serviceService, categoryS
 // Apply authentication middleware
 router.use(AuthenticationToken);
 
-// Routes
+// Reportes Routes (Deben ir primero para no ser capturadas por /:id)
+router.get('/reporte', (req, res) => pagoController.getPaymentReport(req, res));
+router.get('/reportes/sorted-by-date', (req, res) => pagoController.getReportePagosSortedByDate(req, res));
+router.get('/reportes/by-month', (req, res) => pagoController.getReportePagosByMonth(req, res));
+router.get('/reportes/by-year', (req, res) => pagoController.getReportePagosByYear(req, res));
+router.get('/reportes/category/:categoryId/by-month', (req, res) => pagoController.getReportePagosByCategoryMonth(req, res));
+router.get('/reportes/category/:categoryId', (req, res) => pagoController.getReportePagosByCategory(req, res));
+router.get('/reportes/monthly-stats', (req, res) => pagoController.getMonthlyStats(req, res));
+router.get('/reportes/service/:serviceId/averages', (req, res) => pagoController.getServiceAverages(req, res));
+
+// CRUD Routes
 router.post('/', (req, res) => pagoController.createPago(req, res));
 router.get('/', (req, res) => pagoController.getPagos(req, res));
 router.get('/:id', (req, res) => pagoController.getPagoById(req, res));

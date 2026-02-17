@@ -159,4 +159,154 @@ export class PagoController {
             return res.status(400).json({ message: (error as Error).message });
         }
     }
+
+    // Endpoints de reportes
+    async getReportePagosSortedByDate(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const pagos = await this.pagoService.getPagosSortedByDate(userId);
+            return res.status(200).json(pagos);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async getReportePagosByMonth(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const { mes, año } = req.query;
+
+            if (!mes || !año) {
+                return res.status(400).json({ message: "Mes y año son requeridos" });
+            }
+
+            const pagos = await this.pagoService.getPagosByMonth(
+                userId,
+                parseInt(mes as string),
+                parseInt(año as string)
+            );
+            return res.status(200).json(pagos);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async getReportePagosByYear(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const { año } = req.query;
+
+            if (!año) {
+                return res.status(400).json({ message: "Año es requerido" });
+            }
+
+            const pagos = await this.pagoService.getPagosByYear(userId, parseInt(año as string));
+            return res.status(200).json(pagos);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async getReportePagosByCategoryMonth(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const { categoryId } = req.params;
+            const { año } = req.query;
+
+            if (!año) {
+                return res.status(400).json({ message: "Año es requerido" });
+            }
+
+            // Verify category ownership
+            const category = await this.categoryService.getCategoryById(categoryId);
+            if (!category || category.userId.toString() !== userId) {
+                return res.status(404).json({ message: "Categoría no encontrada" });
+            }
+
+            const reporte = await this.pagoService.getPagosByCategoryGroupedByMonth(
+                userId,
+                categoryId,
+                parseInt(año as string)
+            );
+            return res.status(200).json(reporte);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async getReportePagosByCategory(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const { categoryId } = req.params;
+
+            // Verify category ownership
+            const category = await this.categoryService.getCategoryById(categoryId);
+            if (!category || category.userId.toString() !== userId) {
+                return res.status(404).json({ message: "Categoría no encontrada" });
+            }
+
+            const pagos = await this.pagoService.getPagosByCategorySortedByDate(userId, categoryId);
+            return res.status(200).json(pagos);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async getMonthlyStats(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const { mes, año } = req.query;
+
+            if (!mes || !año) {
+                return res.status(400).json({ message: "Mes y año son requeridos" });
+            }
+
+            const stats = await this.pagoService.getMonthlyStats(
+                userId,
+                parseInt(mes as string),
+                parseInt(año as string)
+            );
+            return res.status(200).json(stats);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async getServiceAverages(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const { serviceId } = req.params;
+
+            const averages = await this.pagoService.getServiceAverages(userId, serviceId);
+
+            if (!averages || averages.length === 0) {
+                return res.status(404).json({ message: "No hay datos suficientes para este servicio" });
+            }
+
+            return res.status(200).json(averages[0]);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async getPaymentReport(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user!.id;
+            const { mes, año } = req.query;
+
+            if (!año) {
+                return res.status(400).json({ message: "Año es requerido" });
+            }
+
+            const report = await this.pagoService.getPaymentReport(
+                userId,
+                mes ? parseInt(mes as string) : undefined,
+                parseInt(año as string)
+            );
+
+            return res.status(200).json(report);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
 }

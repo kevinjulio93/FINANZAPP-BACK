@@ -68,7 +68,10 @@ const PagoMensualSchema = new Schema<IPagoMensualDocument>(
     }
 );
 
-// Índice compuesto para búsquedas eficientes por servicio y mes/año
-PagoMensualSchema.index({ serviceId: 1, mes: 1, año: 1 });
+// Índices para búsquedas y reportes eficientes
+PagoMensualSchema.index({ serviceId: 1, mes: 1, año: 1 }); // Búsquedas por servicio y período
+PagoMensualSchema.index({ fechaPago: -1 }); // Ordenamiento por fecha descendente
+PagoMensualSchema.index({ año: 1, mes: 1 }); // Reportes mensuales/anuales
+PagoMensualSchema.index({ serviceId: 1, fechaPago: -1 }); // Pagos por servicio ordenados por fecha
 
 export const PagoMensualModel = mongoose.model<IPagoMensualDocument>('PagoMensual', PagoMensualSchema);
