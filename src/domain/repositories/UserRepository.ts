@@ -23,6 +23,23 @@ export class UserRepository implements IUserRepository {
         return newUser.toObject() as IUser;
     }
 
+    async createGoogleUser(userData: { name: string; email: string; googleId: string }): Promise<IUser> {
+        const newUser = new UserModel({
+            id: new mongoose.Types.ObjectId().toHexString(),
+            name: userData.name,
+            email: userData.email,
+            googleId: userData.googleId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        await newUser.save();
+        return newUser.toObject() as IUser;
+    }
+
+    async getUserByGoogleId(googleId: string): Promise<IUser | null> {
+        return UserModel.findOne({ googleId }) as Promise<IUser | null>;
+    }
+
     async getUserByEmail(email: string): Promise<IUser | null> {
         return UserModel.findOne({ email }) as Promise<IUser | null>;
     }

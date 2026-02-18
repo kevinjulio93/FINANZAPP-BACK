@@ -2,8 +2,10 @@ export interface IUser {
     id: string;
     name: string;
     email: string;
-    passwordHash: string;
+    passwordHash?: string;
+    googleId?: string;
     monthlyBudget?: number;
+    montosOcultos?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -59,6 +59,7 @@ export class AuthController {
                 name: z.string().min(1).max(100).optional(),
                 email: z.string().email().optional(),
                 monthlyBudget: z.number().min(0).optional(),
+                montosOcultos: z.boolean().optional(),
             });
 
             const data = updateSchema.parse(req.body);
@@ -73,6 +74,16 @@ export class AuthController {
                 });
             }
             return res.status(500).json({ message: (error as Error).message });
+        }
+    }
+
+    async googleLogin(req: Request, res: Response): Promise<Response> {
+        try {
+            const { idToken } = z.object({ idToken: z.string() }).parse(req.body);
+            const result = await this.authService.googleLogin(idToken);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
         }
     }
 }

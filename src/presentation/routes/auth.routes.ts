@@ -115,4 +115,28 @@ router.get('/me', AuthenticationToken, (req, res) => authController.getCurrentUs
  */
 router.put('/me', AuthenticationToken, (req, res) => authController.updateCurrentUser(req, res));
 
+/**
+ * @swagger
+ * /api/auth/google:
+ *   post:
+ *     summary: Iniciar sesión con Google
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [idToken]
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login exitoso
+ *       400:
+ *         description: Token inválido
+ */
+router.post('/google', (req, res) => authController.googleLogin(req, res));
+
 export default router;

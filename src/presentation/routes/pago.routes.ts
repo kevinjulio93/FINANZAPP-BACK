@@ -7,6 +7,9 @@ import { ServiceRepository } from '../../infrastructure/repositories/ServiceRepo
 import { CategoryService } from '../../application/services/CategoryService';
 import { CategoryRepository } from '../../infrastructure/repositories/CategoryRepository';
 import { AuthenticationToken } from '../middleware/auth.middleware';
+import multer from 'multer';
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router: Router = Router();
 
@@ -43,5 +46,6 @@ router.get('/:id', (req, res) => pagoController.getPagoById(req, res));
 router.put('/:id', (req, res) => pagoController.updatePago(req, res));
 router.delete('/:id', (req, res) => pagoController.deletePago(req, res));
 router.post('/bulk-delete', (req, res) => pagoController.deletePagosBulk(req, res));
+router.post('/upload', upload.single('file'), (req, res) => pagoController.uploadSupport(req, res));
 
 export default router;

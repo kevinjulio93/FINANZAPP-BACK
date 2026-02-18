@@ -3,6 +3,7 @@ import z from "zod";
 import { PagoService } from "../../application/services/PagoService";
 import { ServiceService } from "../../application/services/ServiceService";
 import { CategoryService } from "../../application/services/CategoryService";
+import { StorageService } from "../../infrastructure/services/StorageService";
 
 interface AuthRequest extends Request {
     user?: {
@@ -18,6 +19,7 @@ const createPagoSchema = z.object({
     fechaPago: z.string(),
     metodoPago: z.enum(['EFECTIVO', 'TARJETA_CREDITO', 'TARJETA_DEBITO', 'TRANSFERENCIA', 'OTRO']).optional(),
     notas: z.string().optional(),
+    supportUrl: z.string().optional(),
 });
 
 const updatePagoSchema = createPagoSchema.partial();
@@ -30,11 +32,13 @@ export class PagoController {
     private pagoService: PagoService;
     private serviceService: ServiceService;
     private categoryService: CategoryService;
+    private storageService: StorageService;
 
     constructor(pagoService: PagoService, serviceService: ServiceService, categoryService: CategoryService) {
         this.pagoService = pagoService;
         this.serviceService = serviceService;
         this.categoryService = categoryService;
+        this.storageService = new StorageService();
     }
 
     async createPago(req: AuthRequest, res: Response): Promise<Response> {
@@ -350,6 +354,20 @@ export class PagoController {
             return res.status(200).json(report);
         } catch (error) {
             return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async uploadSupport(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ message: "No se subió ningún archivo" });
+            }
+
+            const url = await this.storageService.uploadFile(req.file as any);
+            return res.status(200).json({ url });
+        } catch (error) {
+            console.error('Upload support error:', error);
+            return res.status(500).json({ message: "Error al subir el archivo" });
         }
     }
 }

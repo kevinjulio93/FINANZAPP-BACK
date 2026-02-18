@@ -6,8 +6,10 @@ const UserSchema = new mongoose.Schema<IUser>({
     id: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    passwordHash: { type: String, required: true },
+    passwordHash: { type: String, required: false },
+    googleId: { type: String, required: false, unique: true, sparse: true },
     monthlyBudget: { type: Number, default: 0 },
+    montosOcultos: { type: Boolean, default: false },
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
 });

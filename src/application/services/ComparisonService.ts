@@ -5,6 +5,8 @@ import { IOpenAIService } from "../../domain/services/Interfaces/IAnalysisServic
 interface ComparisonRow {
     serviceId: string;
     serviceName: string;
+    categoryId: string;
+    categoryName: string;
     months: Record<string, number | null>; // "2026-01" => 150000
     iaAnalysis: string;
     actionSuggested: string;
@@ -33,9 +35,15 @@ export class ComparisonService {
 
         // 1. Get all services
         const services = await this.serviceRepository.findByUserId(userId);
-        const serviceMap = new Map<string, string>();
+        const serviceMap = new Map<string, { name: string; categoryId: string; categoryName: string }>();
         services.forEach((s: any) => {
-            serviceMap.set((s._id || s.id).toString(), s.name);
+            const catId = (s.categoryId?._id || s.categoryId)?.toString() || 'unknown';
+            const catName = s.categoryId?.name || s.categoryName || 'Sin Categoría';
+            serviceMap.set((s._id || s.id).toString(), {
+                name: s.name,
+                categoryId: catId,
+                categoryName: catName
+            });
         });
 
         // 2. Fetch payments for each month
@@ -50,7 +58,9 @@ export class ComparisonService {
         const monthKeys = months.map(m => `${m.año}-${String(m.mes).padStart(2, '0')}`);
         const rows: ComparisonRow[] = [];
 
-        for (const [serviceId, serviceName] of serviceMap) {
+
+
+        for (const [serviceId, svcInfo] of serviceMap) {
             const monthValues: Record<string, number | null> = {};
 
             for (const key of monthKeys) {
@@ -67,12 +77,23 @@ export class ComparisonService {
 
             rows.push({
                 serviceId,
-                serviceName,
+                serviceName: svcInfo.name,
+                categoryId: svcInfo.categoryId,
+                categoryName: svcInfo.categoryName,
                 months: monthValues,
                 iaAnalysis: '', // Will be filled by IA
                 actionSuggested: ''
             });
         }
+
+        // Sort by Category Name then Service Name
+        rows.sort((a, b) => {
+            if (a.categoryName > b.categoryName) return 1;
+            if (a.categoryName < b.categoryName) return -1;
+            if (a.serviceName > b.serviceName) return 1;
+            if (a.serviceName < b.serviceName) return -1;
+            return 0;
+        });
 
         // 4. Calculate totals
         const totals: Record<string, number> = {};

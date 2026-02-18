@@ -8,6 +8,7 @@ export interface IPagoMensualDocument extends Document {
     fechaPago: Date;
     metodoPago?: string;
     notas?: string;
+    supportUrl?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -44,6 +45,9 @@ const PagoMensualSchema = new Schema<IPagoMensualDocument>(
             enum: ['EFECTIVO', 'TARJETA_CREDITO', 'TARJETA_DEBITO', 'TRANSFERENCIA', 'OTRO'],
         },
         notas: {
+            type: String,
+        },
+        supportUrl: {
             type: String,
         },
     },
