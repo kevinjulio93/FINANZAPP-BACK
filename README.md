@@ -1,58 +1,83 @@
-# Finanzas Backend
+# Finanzas Backend - FinanzApp
 
-Backend application for personal finance management.
+Backend API for the FinanzApp personal finance management application. Built with Node.js, Express, TypeScript, and MongoDB, featuring AI integration via Google Vertex AI.
 
-## Architecture
+## 📚 Architecture
 
-This project follows Clean Architecture principles with SOLID design patterns:
+This project follows a **Layered Architecture** with strict separation of concerns, ensuring scalability and maintainability.
 
-- **Domain Layer**: Entities and repository interfaces (SRP, DIP)
-- **Application Layer**: Business logic services (Repository pattern)
-- **Infrastructure Layer**: Mongoose models and concrete repository implementations (LSP)
-- **Presentation Layer**: Express controllers and routes
-- **DI Container**: Dependency injection setup
+**[👉 Read the Full Architecture Documentation](BACKEND_ARCHITECTURE.md)**
 
-## Project Structure
+### Key Layers:
+1.  **Presentation (`src/presentation`)**: Express controllers handling HTTP requests using Zod for validation.
+2.  **Application (`src/application`)**: Services containing business logic (Payments, Credits, Analysis, AI Chat).
+3.  **Domain (`src/domain`)**: Core entities (User, Category, Service, Payment) and repository interfaces.
+4.  **Infrastructure (`src/infrastructure`)**: Mongoose models, database connections, and external service clients (Vertex AI).
+
+### 🧠 AI Integration (Vertex AI)
+
+The backend integrates with **Google Vertex AI** to provide smart features:
+- **Smart Import**: Automatically categorizes transactions from bank CSVs.
+- **Financial Assistant**: A chat interface that can query your financial data, detect anomalies, and generate projections using "Function Calling".
+
+### 📊 System Flow
+
+```mermaid
+graph TD
+    A[Client Request] -->|HTTP/JSON| B(Express App)
+    B --> C{Auth Middleware}
+    C -->|Unauthorized| D[401 Error]
+    C -->|Authorized| E[Controller]
+    E -->|Validates Input| F[Zod Schema]
+    F -->|Invalid| G[400 Error]
+    F -->|Valid| H[Service Layer]
+    H -->|Logic/AI| I{DB or AI?}
+    I -->|DB| J[(MongoDB)]
+    I -->|AI| K[Vertex Service]
+    J --> H
+    K --> H
+    H -->|Result| E
+    E -->|JSON Response| A
+```
+
+## 🛠 Project Structure
 
 ```
-finanzas-backend/
-├── src/
-│   ├── domain/          # Entidades e interfaces (SRP, DIP)
-│   │   ├── entities/    # Budget.ts, Category.ts, Service.ts, User.ts
-│   │   └── repositories/# IBudgetRepository.ts, ICategoryRepository.ts
-│   ├── application/     # Services con lógica de negocio (Repository pattern)
-│   │   └── services/    # BudgetService.ts, CategoryService.ts
-│   ├── infrastructure/  # Mongoose models y repos concretos (LSP)
-│   │   ├── database/    # connection.ts
-│   │   ├── models/      # Budget.model.ts
-│   │   └── repositories/# BudgetRepository.ts (impl de IBudgetRepository)
-│   ├── presentation/    # Controllers y routes (Express)
-│   │   ├── controllers/ # BudgetController.ts
-│   │   └── routes/      # budget.routes.ts (/api/budgets)
-│   ├── di/              # Dependency Injection container
-│   │   └── container.ts
-│   └── app.ts           # Express setup (middlewares, routes)
-├── .env                 # MONGO_URI=mongodb://localhost:27017/finanzas
-├── .gitignore
-├── package.json
-├── tsconfig.json
-└── README.md
+src/
+├── application/     # Business logic & use cases (Services)
+├── constants/       # Configuration constants (Vertex AI, etc.)
+├── di/              # Dependency Injection Container
+├── domain/          # Entities & Repository Interfaces
+├── infrastructure/  # DB Models & External Services (VertexService)
+├── presentation/    # Controllers & Routes
+└── utils/           # Shared utilities (OwnershipValidator, etc.)
 ```
 
-## Getting Started
+## 🚀 Getting Started
 
-1. Install dependencies:
-   ```bash
-   pnpm install
-   ```
+1.  **Install dependencies**:
+    ```bash
+    pnpm install
+    ```
 
-2. Configure environment variables in `.env`
+2.  **Configure Environment**:
+    Create a `.env` file with:
+    ```env
+    PORT=3000
+    MONGO_URI=mongodb://localhost:27017/finanzapp
+    JWT_SECRET=your_jwt_secret
+    VERTEX_API_KEY=your_google_cloud_api_key
+    VERTEX_MODEL=gemini-2.5-flash-lite
+    ```
 
-3. Start development server:
-   ```bash
-   pnpm dev
-   ```
+3.  **Start Development Server**:
+    ```bash
+    pnpm dev
+    ```
 
-## Database
+## 🧪 Testing
 
-MongoDB connection configured via `MONGO_URI` environment variable.
+Run strict type checks:
+```bash
+pnpm type-check
+```
