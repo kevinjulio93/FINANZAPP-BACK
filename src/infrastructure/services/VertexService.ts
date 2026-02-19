@@ -1,4 +1,6 @@
 import { IOpenAIService } from "../../domain/services/Interfaces/IAnalysisService";
+import { VERTEX_CONSTANTS } from "../../constants/vertex.constants";
+import { VertexUtils } from "../../utils/vertex.utils";
 
 export class VertexService implements IOpenAIService {
     private get apiKey(): string {
@@ -6,47 +8,25 @@ export class VertexService implements IOpenAIService {
     }
 
     private get baseUrl(): string {
-        const model = process.env.VERTEX_MODEL || "gemini-2.5-flash-lite";
+        const model = process.env.VERTEX_MODEL || VERTEX_CONSTANTS.DEFAULT_MODEL;
         // Vertex AI API (AI Platform) endpoint as suggested by user
-        return `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${this.apiKey}`;
+        return VERTEX_CONSTANTS.API_URL_TEMPLATE(model, this.apiKey);
     }
 
     async generateResponse(userId: string, message: string, context?: any, tools?: any[]): Promise<any> {
         if (!this.apiKey) {
             return {
-                content: "Error: No se ha configurado la API Key de Vertex/Gemini. Por favor configura VERTEX_API_KEY en el archivo .env.",
-                role: "assistant"
+                content: VERTEX_CONSTANTS.ERRORS.API_KEY_MISSING,
+                role: VERTEX_CONSTANTS.ROLES.ASSISTANT
             };
         }
 
+        const systemInstructionText = VertexUtils.buildSystemInstruction(context);
+
         const systemInstruction = {
-            role: "user",
+            role: VERTEX_CONSTANTS.ROLES.USER,
             parts: [{
-                text: `System: Eres el asistente financiero inteligente de FinanzApp (vía Vertex AI).
-Tu misión es ayudar al usuario a tomar mejores decisiones financieras analizando sus gastos e ingresos y resolviendo dudas sobre la aplicación.
-
-📘 CONTEXTO Y MANUAL DE FINANZAPP:
-1. 🏠 Dashboard: Vista general con "Spending by Service", "Monthly Expenses" y resumen de gastos totales.
-2. 📂 Categorías y Servicios: 
-   - Organiza gastos en Categorías (ej: Hogar, Alimentación).
-   - Dentro de cada categoría, administra Servicios (ej: Alquiler, Supermercado).
-3. 💳 Pagos:
-   - Registro manual de gastos individuales.
-   - 📤 Importar CSV: Permite cargar gastos masivos desde archivos bancarios.
-   - 🔄 Comparar Meses: Herramienta para analizar variaciones de gastos entre dos periodos.
-4. ⚙️ Configuración:
-   - Cambio de moneda (USD/COP/EUR).
-   - Cambio de idioma (ES/EN/FR).
-   - Tema Claro/Oscuro.
-
-REGLAS DE INTERACCIÓN:
-1. 🛡️ PRIVACIDAD: NUNCA menciones IDs técnicos.
-2. 📊 DATOS REALES: Si preguntan por gastos/anomalías/proyecciones, USA LAS HERRAMIENTAS (get_payment_report, etc).
-3. 💬 ESTILO: Sé amable y usa emojis (💰, 📉, 🚨).
-4. 📅 FECHA ACTUAL: ${new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
-5. 🌍 IDIOMA: Responde siempre en español.
-
-${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\n${context.financialContext}` : ""}`
+                text: systemInstructionText
             }]
         };
 
@@ -54,10 +34,12 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
 
         // Add history
         if (context?.history) {
-            for (const msg of context.history) {
-                if (msg.role === 'system') continue;
+            // Optimization: Limit context to last 20 messages to improve latency
+            const recentHistory = context.history.slice(-20);
+            for (const msg of recentHistory) {
+                if (msg.role === VERTEX_CONSTANTS.ROLES.SYSTEM) continue;
                 contents.push({
-                    role: msg.role === 'assistant' ? 'model' : 'user',
+                    role: msg.role === VERTEX_CONSTANTS.ROLES.ASSISTANT ? VERTEX_CONSTANTS.ROLES.MODEL : VERTEX_CONSTANTS.ROLES.USER,
                     parts: [{ text: msg.content }]
                 });
             }
@@ -65,22 +47,18 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
 
         // Add current message
         contents.push({
-            role: "user",
+            role: VERTEX_CONSTANTS.ROLES.USER,
             parts: [{ text: message }]
         });
 
         const requestBody: any = {
             contents,
             systemInstruction: { parts: [{ text: systemInstruction.parts[0].text }] },
-            generationConfig: {
-                temperature: 0.2,
-                topP: 0.8,
-                topK: 40
-            }
+            generationConfig: VERTEX_CONSTANTS.GENERATION_CONFIG
         };
 
         if (tools && tools.length > 0) {
-            const geminiTools = this.mapOpenAIToolsToGemini(tools);
+            const geminiTools = VertexUtils.mapOpenAIToolsToGemini(tools);
             requestBody.tools = geminiTools;
         }
 
@@ -93,17 +71,17 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`Vertex AI API Error: ${response.status} - ${errorText}`);
+                throw new Error(`${VERTEX_CONSTANTS.ERRORS.API_ERROR_PREFIX} ${response.status} - ${errorText}`);
             }
 
             const data = await response.json();
-            return this.convertGeminiResponse(data);
+            return VertexUtils.convertGeminiResponse(data);
 
         } catch (error) {
             console.error("Error calling Vertex AI:", error);
             return {
-                content: "Lo siento, hubo un error al conectar con Vertex AI.",
-                role: "assistant"
+                content: VERTEX_CONSTANTS.ERRORS.CONNECTION_FAILED,
+                role: VERTEX_CONSTANTS.ROLES.ASSISTANT
             };
         }
     }
@@ -112,16 +90,22 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
         const contents = [];
         let systemInstructionText = "";
 
-        for (const msg of messages) {
-            if (msg.role === 'system') {
-                systemInstructionText = msg.content;
-                continue;
-            }
+        // Extract system instruction from the full history first
+        const systemMsg = messages.find(m => m.role === VERTEX_CONSTANTS.ROLES.SYSTEM);
+        if (systemMsg) {
+            systemInstructionText = systemMsg.content;
+        }
+
+        // Optimization: Limit history to last 20 messages
+        const recentMessages = messages.filter(m => m.role !== VERTEX_CONSTANTS.ROLES.SYSTEM).slice(-20);
+
+        for (const msg of recentMessages) {
+            // System messages are handled before this loop or ignored here since we filter them
 
             if (msg.role === 'tool') {
                 try {
                     contents.push({
-                        role: "function",
+                        role: VERTEX_CONSTANTS.ROLES.FUNCTION,
                         parts: [{
                             functionResponse: {
                                 name: msg.name,
@@ -131,7 +115,7 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
                     });
                 } catch (e) {
                     contents.push({
-                        role: "function",
+                        role: VERTEX_CONSTANTS.ROLES.FUNCTION,
                         parts: [{
                             functionResponse: {
                                 name: msg.name,
@@ -140,7 +124,7 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
                         }]
                     });
                 }
-            } else if (msg.role === 'assistant') {
+            } else if (msg.role === VERTEX_CONSTANTS.ROLES.ASSISTANT) {
                 if (msg.tool_calls) {
                     const parts = msg.tool_calls.map((tc: any) => ({
                         functionCall: {
@@ -148,12 +132,12 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
                             args: typeof tc.function.arguments === 'string' ? JSON.parse(tc.function.arguments) : tc.function.arguments
                         }
                     }));
-                    contents.push({ role: "model", parts });
+                    contents.push({ role: VERTEX_CONSTANTS.ROLES.MODEL, parts });
                 } else {
-                    contents.push({ role: "model", parts: [{ text: msg.content || "" }] });
+                    contents.push({ role: VERTEX_CONSTANTS.ROLES.MODEL, parts: [{ text: msg.content || "" }] });
                 }
             } else {
-                contents.push({ role: "user", parts: [{ text: msg.content }] });
+                contents.push({ role: VERTEX_CONSTANTS.ROLES.USER, parts: [{ text: msg.content }] });
             }
         }
 
@@ -169,7 +153,7 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
         }
 
         if (tools && tools.length > 0) {
-            const geminiTools = this.mapOpenAIToolsToGemini(tools);
+            const geminiTools = VertexUtils.mapOpenAIToolsToGemini(tools);
             requestBody.tools = geminiTools;
         }
 
@@ -182,62 +166,18 @@ ${context?.financialContext ? `\n\n📊 DATOS FINANCIEROS ACTUALES DEL USUARIO:\
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`Vertex AI API Error: ${response.status} - ${errorText}`);
+                throw new Error(`${VERTEX_CONSTANTS.ERRORS.API_ERROR_PREFIX} ${response.status} - ${errorText}`);
             }
 
             const data = await response.json();
-            return this.convertGeminiResponse(data);
+            return VertexUtils.convertGeminiResponse(data);
 
         } catch (error) {
             console.error("Error continuing Vertex conversation:", error);
             return {
-                content: "Lo siento, error de conexión con Vertex AI.",
-                role: "assistant"
+                content: VERTEX_CONSTANTS.ERRORS.CONNECTION_FAILED,
+                role: VERTEX_CONSTANTS.ROLES.ASSISTANT
             };
         }
-    }
-
-    private mapOpenAIToolsToGemini(tools: any[]): any[] {
-        const functionDeclarations = tools.map(t => {
-            const fn = t.function;
-            return {
-                name: fn.name,
-                description: fn.description,
-                parameters: fn.parameters
-            };
-        });
-
-        return [{ function_declarations: functionDeclarations }];
-    }
-
-    private convertGeminiResponse(data: any): any {
-        const candidate = data.candidates?.[0];
-        if (!candidate || !candidate.content || !candidate.content.parts) {
-            return { content: "No response from Vertex.", role: "assistant" };
-        }
-
-        const part = candidate.content.parts[0];
-
-        if (part.functionCall) {
-            const callId = `call_${Math.random().toString(36).substring(7)}`;
-
-            return {
-                role: "assistant",
-                content: null,
-                tool_calls: [{
-                    id: callId,
-                    type: "function",
-                    function: {
-                        name: part.functionCall.name,
-                        arguments: JSON.stringify(part.functionCall.args)
-                    }
-                }]
-            };
-        }
-
-        return {
-            role: "assistant",
-            content: part.text
-        };
     }
 }

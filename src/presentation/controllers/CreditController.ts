@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { CreditService } from '../../application/services/CreditService';
 import z from 'zod';
 import { TipoPago } from '../../domain/entities/Credit';
+import { OwnershipValidator } from '../../utils/ownership.validator';
 
 interface AuthRequest extends Request {
     user?: {
@@ -30,7 +31,20 @@ const simulacionSchema = z.object({
 });
 
 export class CreditController {
-    constructor(private creditService: CreditService) {}
+    constructor(private creditService: CreditService) { }
+
+    private handleError(res: Response, error: any) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
+        }
+        if (error.message === 'Crédito no encontrado') {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message === 'No autorizado') {
+            return res.status(403).json({ message: error.message });
+        }
+        return res.status(400).json({ message: error.message });
+    }
 
     async createCredit(req: AuthRequest, res: Response): Promise<Response> {
         try {
@@ -44,10 +58,7 @@ export class CreditController {
 
             return res.status(201).json(credit);
         } catch (error) {
-            if (error instanceof z.ZodError) {
-                return res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
-            }
-            return res.status(400).json({ message: (error as Error).message });
+            return this.handleError(res, error);
         }
     }
 
@@ -57,46 +68,28 @@ export class CreditController {
             const credits = await this.creditService.getCreditsByUserId(userId);
             return res.status(200).json(credits);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return this.handleError(res, error);
         }
     }
 
     async getCreditById(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
-            const credit = await this.creditService.getCreditById(id);
-
-            if (!credit) {
-                return res.status(404).json({ message: 'Crédito no encontrado' });
-            }
-
-            if (credit.userId !== req.user!.id) {
-                return res.status(403).json({ message: 'No autorizado' });
-            }
-
+            const credit = await OwnershipValidator.validateCreditOwnership(this.creditService, id, req.user!.id);
             return res.status(200).json(credit);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return this.handleError(res, error);
         }
     }
 
     async getProyeccion(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
-            const credit = await this.creditService.getCreditById(id);
-
-            if (!credit) {
-                return res.status(404).json({ message: 'Crédito no encontrado' });
-            }
-
-            if (credit.userId !== req.user!.id) {
-                return res.status(403).json({ message: 'No autorizado' });
-            }
-
+            await OwnershipValidator.validateCreditOwnership(this.creditService, id, req.user!.id);
             const proyeccion = await this.creditService.getProyeccion(id);
             return res.status(200).json(proyeccion);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return this.handleError(res, error);
         }
     }
 
@@ -105,23 +98,12 @@ export class CreditController {
             const { id } = req.params;
             const { montoAbono } = simulacionSchema.parse(req.body);
 
-            const credit = await this.creditService.getCreditById(id);
-
-            if (!credit) {
-                return res.status(404).json({ message: 'Crédito no encontrado' });
-            }
-
-            if (credit.userId !== req.user!.id) {
-                return res.status(403).json({ message: 'No autorizado' });
-            }
+            await OwnershipValidator.validateCreditOwnership(this.creditService, id, req.user!.id);
 
             const simulacion = await this.creditService.simularAbono(id, montoAbono);
             return res.status(200).json(simulacion);
         } catch (error) {
-            if (error instanceof z.ZodError) {
-                return res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
-            }
-            return res.status(400).json({ message: (error as Error).message });
+            return this.handleError(res, error);
         }
     }
 
@@ -130,15 +112,7 @@ export class CreditController {
             const { id } = req.params;
             const data = abonoSchema.parse(req.body);
 
-            const credit = await this.creditService.getCreditById(id);
-
-            if (!credit) {
-                return res.status(404).json({ message: 'Crédito no encontrado' });
-            }
-
-            if (credit.userId !== req.user!.id) {
-                return res.status(403).json({ message: 'No autorizado' });
-            }
+            await OwnershipValidator.validateCreditOwnership(this.creditService, id, req.user!.id);
 
             const abono = await this.creditService.registrarAbono({
                 creditId: id,
@@ -148,50 +122,29 @@ export class CreditController {
 
             return res.status(201).json(abono);
         } catch (error) {
-            if (error instanceof z.ZodError) {
-                return res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
-            }
-            return res.status(400).json({ message: (error as Error).message });
+            return this.handleError(res, error);
         }
     }
 
     async getAbonos(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
-            const credit = await this.creditService.getCreditById(id);
-
-            if (!credit) {
-                return res.status(404).json({ message: 'Crédito no encontrado' });
-            }
-
-            if (credit.userId !== req.user!.id) {
-                return res.status(403).json({ message: 'No autorizado' });
-            }
-
+            await OwnershipValidator.validateCreditOwnership(this.creditService, id, req.user!.id);
             const abonos = await this.creditService.getAbonosByCredit(id);
             return res.status(200).json(abonos);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return this.handleError(res, error);
         }
     }
 
     async deleteCredit(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
-            const credit = await this.creditService.getCreditById(id);
-
-            if (!credit) {
-                return res.status(404).json({ message: 'Crédito no encontrado' });
-            }
-
-            if (credit.userId !== req.user!.id) {
-                return res.status(403).json({ message: 'No autorizado' });
-            }
-
+            await OwnershipValidator.validateCreditOwnership(this.creditService, id, req.user!.id);
             await this.creditService.deleteCredit(id);
             return res.status(200).json({ message: 'Crédito eliminado correctamente' });
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return this.handleError(res, error);
         }
     }
 }

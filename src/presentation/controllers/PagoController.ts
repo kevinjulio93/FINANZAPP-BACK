@@ -4,6 +4,7 @@ import { PagoService } from "../../application/services/PagoService";
 import { ServiceService } from "../../application/services/ServiceService";
 import { CategoryService } from "../../application/services/CategoryService";
 import { StorageService } from "../../infrastructure/services/StorageService";
+import { OwnershipValidator } from "../../utils/ownership.validator";
 
 interface AuthRequest extends Request {
     user?: {
@@ -46,15 +47,15 @@ export class PagoController {
             const userId = req.user!.id;
             const data = createPagoSchema.parse(req.body);
 
-            // Verify service exists and user owns it
-            const service = await this.serviceService.getServiceById(data.serviceId);
-            if (!service) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
-            }
-
-            const category = await this.categoryService.getCategoryById(service.categoryId.toString());
-            if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
+            try {
+                await OwnershipValidator.validateServiceAndCategory(
+                    this.serviceService,
+                    this.categoryService,
+                    data.serviceId,
+                    userId
+                );
+            } catch (validationError: any) {
+                return res.status(404).json({ message: validationError.message });
             }
 
             const pago = await this.pagoService.createPago({
@@ -107,20 +108,18 @@ export class PagoController {
             const userId = req.user!.id;
             const pagoId = req.params.id;
 
-            const pago = await this.pagoService.getPagoById(pagoId);
-            if (!pago) {
-                return res.status(404).json({ message: "Pago no encontrado" });
-            }
-
-            // Verify ownership through service
-            const service = await this.serviceService.getServiceById(pago.serviceId.toString());
-            if (!service) {
-                return res.status(404).json({ message: "Pago no encontrado" });
-            }
-
-            const category = await this.categoryService.getCategoryById(service.categoryId.toString());
-            if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Pago no encontrado" });
+            let pago;
+            try {
+                const result = await OwnershipValidator.validatePagoOwnership(
+                    this.pagoService,
+                    this.serviceService,
+                    this.categoryService,
+                    pagoId,
+                    userId
+                );
+                pago = result.pago;
+            } catch (validationError: any) {
+                return res.status(404).json({ message: validationError.message });
             }
 
             return res.status(200).json(pago);
@@ -135,20 +134,17 @@ export class PagoController {
             const pagoId = req.params.id;
             const data = updatePagoSchema.parse(req.body);
 
-            const pago = await this.pagoService.getPagoById(pagoId);
-            if (!pago) {
-                return res.status(404).json({ message: "Pago no encontrado" });
-            }
-
-            // Verify ownership
-            const service = await this.serviceService.getServiceById(pago.serviceId.toString());
-            if (!service) {
-                return res.status(404).json({ message: "Pago no encontrado" });
-            }
-
-            const category = await this.categoryService.getCategoryById(service.categoryId.toString());
-            if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Pago no encontrado" });
+            try {
+                // Verify ownership (will throw if not owned)
+                await OwnershipValidator.validatePagoOwnership(
+                    this.pagoService,
+                    this.serviceService,
+                    this.categoryService,
+                    pagoId,
+                    userId
+                );
+            } catch (validationError: any) {
+                return res.status(404).json({ message: validationError.message });
             }
 
             const updateData: any = { ...data };
@@ -168,20 +164,16 @@ export class PagoController {
             const userId = req.user!.id;
             const pagoId = req.params.id;
 
-            const pago = await this.pagoService.getPagoById(pagoId);
-            if (!pago) {
-                return res.status(404).json({ message: "Pago no encontrado" });
-            }
-
-            // Verify ownership
-            const service = await this.serviceService.getServiceById(pago.serviceId.toString());
-            if (!service) {
-                return res.status(404).json({ message: "Pago no encontrado" });
-            }
-
-            const category = await this.categoryService.getCategoryById(service.categoryId.toString());
-            if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Pago no encontrado" });
+            try {
+                await OwnershipValidator.validatePagoOwnership(
+                    this.pagoService,
+                    this.serviceService,
+                    this.categoryService,
+                    pagoId,
+                    userId
+                );
+            } catch (validationError: any) {
+                return res.status(404).json({ message: validationError.message });
             }
 
             await this.pagoService.deletePago(pagoId);
@@ -264,10 +256,14 @@ export class PagoController {
                 return res.status(400).json({ message: "Año es requerido" });
             }
 
-            // Verify category ownership
-            const category = await this.categoryService.getCategoryById(categoryId);
-            if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Categoría no encontrada" });
+            try {
+                await OwnershipValidator.validateCategoryOwnership(
+                    this.categoryService,
+                    categoryId,
+                    userId
+                );
+            } catch (validationError: any) {
+                return res.status(404).json({ message: validationError.message });
             }
 
             const reporte = await this.pagoService.getPagosByCategoryGroupedByMonth(
@@ -286,10 +282,14 @@ export class PagoController {
             const userId = req.user!.id;
             const { categoryId } = req.params;
 
-            // Verify category ownership
-            const category = await this.categoryService.getCategoryById(categoryId);
-            if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Categoría no encontrada" });
+            try {
+                await OwnershipValidator.validateCategoryOwnership(
+                    this.categoryService,
+                    categoryId,
+                    userId
+                );
+            } catch (validationError: any) {
+                return res.status(404).json({ message: validationError.message });
             }
 
             const pagos = await this.pagoService.getPagosByCategorySortedByDate(userId, categoryId);
