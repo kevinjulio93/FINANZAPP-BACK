@@ -99,13 +99,14 @@ describe('AuthController', () => {
 
       const mockToken = 'mock-jwt-token';
       mockRequest.body = credentials;
-      (mockAuthService.login as jest.Mock).mockResolvedValue(mockToken);
+      const mockLoginResponse = { token: mockToken, user: { id: '123' } };
+      (mockAuthService.login as jest.Mock).mockResolvedValue(mockLoginResponse);
 
       await authController.login(mockRequest as Request, mockResponse as Response);
 
       expect(mockAuthService.login).toHaveBeenCalledWith(credentials);
       expect(statusMock).toHaveBeenCalledWith(200);
-      expect(jsonMock).toHaveBeenCalledWith({ token: mockToken });
+      expect(jsonMock).toHaveBeenCalledWith(mockLoginResponse);
     });
 
     it('should return 400 if validation fails', async () => {

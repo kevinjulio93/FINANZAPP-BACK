@@ -60,6 +60,7 @@ export class AuthController {
                 email: z.string().email().optional(),
                 monthlyBudget: z.number().min(0).optional(),
                 montosOcultos: z.boolean().optional(),
+                whatsappPhone: z.string().optional(),
             });
 
             const data = updateSchema.parse(req.body);
@@ -74,6 +75,39 @@ export class AuthController {
                 });
             }
             return res.status(500).json({ message: (error as Error).message });
+        }
+    }
+
+    async sendWhatsAppVerification(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ message: "Unauthorized" });
+            }
+
+            const result = await this.authService.sendWhatsAppVerificationCode(userId);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ message: (error as Error).message });
+        }
+    }
+
+    async verifyWhatsApp(req: AuthRequest, res: Response): Promise<Response> {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ message: "Unauthorized" });
+            }
+
+            const { code } = z.object({ code: z.string().length(6) }).parse(req.body);
+
+            const result = await this.authService.verifyWhatsAppCode(userId, code);
+            return res.status(200).json(result);
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                return res.status(400).json({ message: "Invalid code format" });
+            }
+            return res.status(400).json({ message: (error as Error).message });
         }
     }
 

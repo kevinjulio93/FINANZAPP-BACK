@@ -10,6 +10,7 @@ jest.mock('jsonwebtoken');
 describe('AuthService', () => {
   let authService: AuthService;
   let mockUserRepository: IUserRepository;
+  let mockWhatsAppService: any;
 
   const mockUser: IUser = {
     id: '123',
@@ -31,8 +32,14 @@ describe('AuthService', () => {
       createUser: jest.fn(),
       getUserByEmail: jest.fn(),
       getUserById: jest.fn(),
+      createGoogleUser: jest.fn(),
+      getUserByGoogleId: jest.fn(),
+      updateUser: jest.fn(),
     };
-    authService = new AuthService(mockUserRepository);
+    mockWhatsAppService = {
+      sendTextMessage: jest.fn(),
+    };
+    authService = new AuthService(mockUserRepository, mockWhatsAppService);
   });
 
   describe('register', () => {
@@ -81,7 +88,17 @@ describe('AuthService', () => {
         expect.any(String),
         { expiresIn: '24h' }
       );
-      expect(result).toBe(mockToken);
+      expect(result).toEqual({
+        token: mockToken,
+        user: {
+          id: mockUser.id,
+          name: mockUser.name,
+          email: mockUser.email,
+          monthlyBudget: 0,
+          montosOcultos: false,
+          createdAt: mockUser.createdAt,
+        },
+      });
     });
 
     it('should throw error if user does not exist', async () => {

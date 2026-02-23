@@ -23,6 +23,7 @@ describe('CategoryController', () => {
     mockCategoryService = {
       createCategory: jest.fn(),
       getCategoriesByUserId: jest.fn(),
+      getCategoriesByUserIdPaginated: jest.fn(),
       getCategoryById: jest.fn(),
       updateCategory: jest.fn(),
       deleteCategory: jest.fn(),
@@ -40,6 +41,7 @@ describe('CategoryController', () => {
 
     mockRequest = {
       body: {},
+      query: {},
       user: { id: 'user123' },
     };
   });
@@ -107,6 +109,7 @@ describe('CategoryController', () => {
 
   describe('getCategories', () => {
     it('should return all categories for user', async () => {
+      mockRequest.query = { page: 'all' };
       const mockCategories = [
         {
           id: 'cat1',
@@ -136,6 +139,7 @@ describe('CategoryController', () => {
     });
 
     it('should return empty array if no categories found', async () => {
+      mockRequest.query = { page: 'all' };
       (mockCategoryService.getCategoriesByUserId as jest.Mock).mockResolvedValue([]);
 
       await categoryController.getCategories(mockRequest as AuthenticatedRequest, mockResponse as Response);
@@ -145,6 +149,7 @@ describe('CategoryController', () => {
     });
 
     it('should return 400 if service throws error', async () => {
+      mockRequest.query = { page: 'all' };
       (mockCategoryService.getCategoriesByUserId as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       await categoryController.getCategories(mockRequest as AuthenticatedRequest, mockResponse as Response);

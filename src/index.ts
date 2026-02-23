@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { connectDB } from './infrastructure/database/connection';
@@ -13,12 +11,28 @@ import pagoRoutes from './presentation/routes/pago.routes';
 import chatRoutes from './presentation/routes/chat.routes';
 import importRoutes from './presentation/routes/import.routes';
 import comparisonRoutes from './presentation/routes/comparison.routes';
+import whatsappRoutes from './presentation/routes/whatsapp.routes';
+import exportImportRoutes from './presentation/routes/export-import.routes';
 import { setupSwagger } from './config/swagger';
-
-
+import { SchedulerService } from './infrastructure/services/SchedulerService';
+import { NotificationService } from './application/services/NotificationService';
+import { UserRepository } from './domain/repositories/UserRepository';
+import { AIMessageService } from './application/services/AIMessageService';
+import { WhatsAppService } from './infrastructure/services/WhatsAppService';
+import { VertexService } from './infrastructure/services/VertexService';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Initialize Scheduler
+const userRepository = new UserRepository();
+const vertexService = new VertexService();
+const aiMessageService = new AIMessageService(vertexService);
+const whatsappService = new WhatsAppService();
+const notificationService = new NotificationService(userRepository, aiMessageService, whatsappService);
+const schedulerService = new SchedulerService(notificationService);
+
+schedulerService.start();
 
 // Middlewares
 app.use(cors());
@@ -37,6 +51,8 @@ app.use('/api/pagos', pagoRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/comparison', comparisonRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/export-import', exportImportRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

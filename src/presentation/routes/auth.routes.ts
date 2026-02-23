@@ -3,10 +3,12 @@ import { AuthController } from '../controllers/AuthController';
 import { AuthService } from '../../application/services/AuthService';
 import { UserRepository } from '../../domain/repositories/UserRepository';
 import { AuthenticationToken } from '../middleware/auth.middleware';
+import { WhatsAppService } from '../../infrastructure/services/WhatsAppService';
 
 const router: Router = Router();
 const userRepository = new UserRepository();
-const authService = new AuthService(userRepository);
+const whatsappService = new WhatsAppService();
+const authService = new AuthService(userRepository, whatsappService);
 const authController = new AuthController(authService);
 
 /**
@@ -114,6 +116,47 @@ router.get('/me', AuthenticationToken, (req, res) => authController.getCurrentUs
  *         description: No autorizado
  */
 router.put('/me', AuthenticationToken, (req, res) => authController.updateCurrentUser(req, res));
+
+/**
+ * @swagger
+ * /api/auth/whatsapp/send-code:
+ *   post:
+ *     summary: Enviar código de verificación de WhatsApp
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Código enviado
+ *       401:
+ *         description: No autorizado
+ */
+router.post('/whatsapp/send-code', AuthenticationToken, (req, res) => authController.sendWhatsAppVerification(req, res));
+
+/**
+ * @swagger
+ * /api/auth/whatsapp/verify:
+ *   post:
+ *     summary: Verificar código de WhatsApp
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [code]
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 length: 6
+ *     responses:
+ *       200:
+ *         description: WhatsApp verificado
+ *       400:
+ *         description: Código inválido
+ *       401:
+ *         description: No autorizado
+ */
+router.post('/whatsapp/verify', AuthenticationToken, (req, res) => authController.verifyWhatsApp(req, res));
 
 /**
  * @swagger

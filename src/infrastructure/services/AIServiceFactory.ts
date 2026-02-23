@@ -1,8 +1,6 @@
+import 'dotenv/config';
 import { IOpenAIService } from "../../domain/services/Interfaces/IAnalysisService";
 import { VertexService } from "./VertexService";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 export class AIServiceFactory {
     static createService(): IOpenAIService {

@@ -18,6 +18,10 @@ export interface ICreateService {
   name: string;
   montoEstimado: number;
   categoryId: mongoose.Types.ObjectId;
+  fechaUltimoPago?: Date;
+  fechaLimitePago?: Date;
+  diasRecordatorio?: number[];
+  estado?: string;
 }
 
 export interface IUpdatePago {
@@ -29,14 +33,16 @@ export interface IUpdatePago {
 }
 
 export interface IService {
-    id: mongoose.Types.ObjectId;
-    name: string;
-    montoEstimado: number;
-    fechaUltimoPago?: Date;
-    estado: EstadoServicio;
-    proximoPago: Date; // Calculado desde fechaUltimoPago + 30 dias
-    categoryId: mongoose.Types.ObjectId;
-    userId: mongoose.Types.ObjectId;
-    createdAt: Date;
-    updatedAt: Date;
+  id: mongoose.Types.ObjectId;
+  name: string;
+  montoEstimado: number;
+  fechaUltimoPago?: Date;
+  estado: EstadoServicio;
+  proximoPago: Date; // Calculado desde fechaUltimoPago + 30 dias
+  fechaLimitePago?: Date;
+  diasRecordatorio?: number[];
+  categoryId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }

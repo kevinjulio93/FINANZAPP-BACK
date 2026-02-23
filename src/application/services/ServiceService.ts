@@ -6,11 +6,15 @@ import { IServiceRepository } from "../../domain/repositories/Interfaces/IServic
 export class ServiceService {
     constructor(private serviceRepository: IServiceRepository) { }
 
-    async createService(data: { name: string; montoEstimado: number; fechaUltimoPago?: string; categoryId: string; estado: string; userId: string }) {
+    async createService(data: { name: string; montoEstimado: number; fechaUltimoPago?: string; fechaLimitePago?: Date; diasRecordatorio?: number[]; categoryId: string; estado: string; userId: string }) {
         return this.serviceRepository.create({
             name: data.name,
             montoEstimado: data.montoEstimado,
             categoryId: new mongoose.Types.ObjectId(data.categoryId),
+            fechaUltimoPago: data.fechaUltimoPago ? new Date(data.fechaUltimoPago) : undefined,
+            fechaLimitePago: data.fechaLimitePago,
+            diasRecordatorio: data.diasRecordatorio,
+            estado: data.estado
         }, data.userId);
     }
 

@@ -26,6 +26,7 @@ describe('CategoryService', () => {
     mockCategoryRepository = {
       create: jest.fn(),
       findByUserId: jest.fn(),
+      findByUserIdPaginated: jest.fn(),
       findById: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),

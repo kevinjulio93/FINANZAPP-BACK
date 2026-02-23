@@ -8,6 +8,8 @@ const ServiceSchema = new mongoose.Schema<IService>({
     fechaUltimoPago: { type: Date },
     estado: { type: String, enum: Object.values(EstadoServicio), default: EstadoServicio.PENDIENTE },
     proximoPago: { type: Date, required: false },
+    fechaLimitePago: { type: Date, required: false },
+    diasRecordatorio: { type: [Number], required: false },
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
 }, {
@@ -22,7 +24,7 @@ ServiceSchema.virtual('pagosMensuales', {
     foreignField: 'serviceId',
 });
 
-ServiceSchema.virtual('id').get(function() {
+ServiceSchema.virtual('id').get(function () {
     // @ts-ignore
     return this._id.toString();
 });

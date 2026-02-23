@@ -3,14 +3,17 @@ import jwt from 'jsonwebtoken';
 import { IUserRepository } from '../../domain/repositories/Interfaces/IUserRepository';
 import { INewUser } from '../../domain/entities/User';
 import { OAuth2Client } from 'google-auth-library';
+import { WhatsAppService } from '../../infrastructure/services/WhatsAppService';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export class AuthService {
   private userRepository: IUserRepository;
+  private whatsappService: WhatsAppService;
 
-  constructor(userRepository: IUserRepository) {
+  constructor(userRepository: IUserRepository, whatsappService: WhatsAppService) {
     this.userRepository = userRepository;
+    this.whatsappService = whatsappService;
   }
 
   async register(userData: INewUser) {
@@ -55,6 +58,8 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        whatsappPhone: user.whatsappPhone,
+        whatsappVerified: user.whatsappVerified,
         monthlyBudget: user.monthlyBudget || 0,
         montosOcultos: user.montosOcultos || false,
         createdAt: user.createdAt,
@@ -72,6 +77,8 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
+      whatsappPhone: user.whatsappPhone,
+      whatsappVerified: user.whatsappVerified,
       monthlyBudget: user.monthlyBudget || 0,
       montosOcultos: user.montosOcultos || false,
       createdAt: user.createdAt,
@@ -79,7 +86,7 @@ export class AuthService {
     };
   }
 
-  async updateUser(userId: string, updates: { name?: string; email?: string; monthlyBudget?: number; montosOcultos?: boolean }) {
+  async updateUser(userId: string, updates: { name?: string; email?: string; monthlyBudget?: number; montosOcultos?: boolean; whatsappPhone?: string }) {
     // Validar que el usuario existe
     const existingUser = await this.userRepository.getUserById(userId);
     if (!existingUser) {
@@ -104,11 +111,65 @@ export class AuthService {
       id: updatedUser.id,
       name: updatedUser.name,
       email: updatedUser.email,
+      whatsappPhone: updatedUser.whatsappPhone,
+      whatsappVerified: updatedUser.whatsappVerified,
       monthlyBudget: updatedUser.monthlyBudget || 0,
       montosOcultos: updatedUser.montosOcultos || false,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };
+  }
+
+  async sendWhatsAppVerificationCode(userId: string) {
+    const user = await this.userRepository.getUserById(userId);
+    if (!user || !user.whatsappPhone) {
+      throw new Error('User not found or phone not configured');
+    }
+
+    // Generate 6 digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 10); // 10 minutes expiry
+
+    await this.userRepository.updateUser(userId, {
+      whatsappVerificationCode: code,
+      whatsappVerificationExpires: expires
+    });
+
+    const message = `Tu código de verificación para FinanzApp es: ${code}. Válido por 10 minutos.`;
+
+    console.log(`[WHATSAPP TEST] Código de verificación generado: ${code}`);
+
+    await this.whatsappService.sendVerification(user.whatsappPhone, code);
+
+    return { success: true, message: 'Verification code sent' };
+  }
+
+  async verifyWhatsAppCode(userId: string, code: string) {
+    const user = await this.userRepository.getUserById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (!user.whatsappVerificationCode || !user.whatsappVerificationExpires) {
+      throw new Error('No verification code found');
+    }
+
+    if (user.whatsappVerificationCode !== code) {
+      throw new Error('Invalid verification code');
+    }
+
+    if (new Date() > user.whatsappVerificationExpires) {
+      throw new Error('Verification code expired');
+    }
+
+    await this.userRepository.updateUser(userId, {
+      whatsappVerified: true,
+      whatsappVerificationCode: undefined,
+      whatsappVerificationExpires: undefined
+    });
+
+    return { success: true, message: 'WhatsApp verified successfully' };
   }
 
   async googleLogin(idToken: string) {
@@ -158,6 +219,8 @@ export class AuthService {
           id: user.id,
           name: user.name,
           email: user.email,
+          whatsappPhone: user.whatsappPhone,
+          whatsappVerified: user.whatsappVerified,
           monthlyBudget: user.monthlyBudget || 0,
           montosOcultos: user.montosOcultos || false,
           createdAt: user.createdAt,

@@ -15,6 +15,8 @@ const createServiceSchema = z.object({
     name: z.string(),
     montoEstimado: z.number().nonnegative(),
     fechaUltimoPago: z.string().optional(),
+    fechaLimitePago: z.string().optional(),
+    diasRecordatorio: z.array(z.number()).optional(),
     categoryId: z.string(),
     estado: z.enum(Object.values(EstadoServicio) as [string, ...string[]]).optional(),
 });
@@ -30,7 +32,7 @@ export class ServiceController {
 
     async createService(req: AuthRequest, res: Response): Promise<Response> {
         try {
-            const { name, montoEstimado, fechaUltimoPago, categoryId, estado } = createServiceSchema.parse(req.body);
+            const { name, montoEstimado, fechaUltimoPago, fechaLimitePago, diasRecordatorio, categoryId, estado } = createServiceSchema.parse(req.body);
             const userId = req.user!.id;
             const category = await this.categoryService.getCategoryById(categoryId);
 
@@ -46,6 +48,8 @@ export class ServiceController {
                 name,
                 montoEstimado,
                 fechaUltimoPago: fechaUltimoPago ? new Date(fechaUltimoPago).toString() : new Date().toString(),
+                fechaLimitePago: fechaLimitePago ? new Date(fechaLimitePago) : undefined,
+                diasRecordatorio,
                 categoryId,
                 estado: estado || EstadoServicio.PENDIENTE,
                 userId,
