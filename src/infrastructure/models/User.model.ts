@@ -14,6 +14,7 @@ const UserSchema = new mongoose.Schema<IUser>({
     whatsappVerificationExpires: { type: Date, required: false },
     monthlyBudget: { type: Number, default: 0 },
     montosOcultos: { type: Boolean, default: false },
+    language: { type: String, default: 'en' },
     createdAt: { type: Date, required: true, default: Date.now },
     updatedAt: { type: Date, required: true, default: Date.now },
 });

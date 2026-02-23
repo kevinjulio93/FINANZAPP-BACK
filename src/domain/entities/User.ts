@@ -10,6 +10,7 @@ export interface IUser {
     whatsappVerificationExpires?: Date;
     monthlyBudget?: number;
     montosOcultos?: boolean;
+    language?: string;
     createdAt: Date;
     updatedAt: Date;
 }

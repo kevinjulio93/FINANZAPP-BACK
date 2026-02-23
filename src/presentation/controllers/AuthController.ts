@@ -61,6 +61,7 @@ export class AuthController {
                 monthlyBudget: z.number().min(0).optional(),
                 montosOcultos: z.boolean().optional(),
                 whatsappPhone: z.string().optional(),
+                language: z.string().optional(),
             });
 
             const data = updateSchema.parse(req.body);

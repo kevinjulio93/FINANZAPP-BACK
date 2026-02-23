@@ -62,6 +62,7 @@ export class AuthService {
         whatsappVerified: user.whatsappVerified,
         monthlyBudget: user.monthlyBudget || 0,
         montosOcultos: user.montosOcultos || false,
+        language: user.language || 'en',
         createdAt: user.createdAt,
       }
     };
@@ -81,12 +82,13 @@ export class AuthService {
       whatsappVerified: user.whatsappVerified,
       monthlyBudget: user.monthlyBudget || 0,
       montosOcultos: user.montosOcultos || false,
+      language: user.language || 'en',
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
   }
 
-  async updateUser(userId: string, updates: { name?: string; email?: string; monthlyBudget?: number; montosOcultos?: boolean; whatsappPhone?: string }) {
+  async updateUser(userId: string, updates: { name?: string; email?: string; monthlyBudget?: number; montosOcultos?: boolean; whatsappPhone?: string; language?: string }) {
     // Validar que el usuario existe
     const existingUser = await this.userRepository.getUserById(userId);
     if (!existingUser) {
@@ -115,6 +117,7 @@ export class AuthService {
       whatsappVerified: updatedUser.whatsappVerified,
       monthlyBudget: updatedUser.monthlyBudget || 0,
       montosOcultos: updatedUser.montosOcultos || false,
+      language: updatedUser.language || 'en',
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };
@@ -223,6 +226,7 @@ export class AuthService {
           whatsappVerified: user.whatsappVerified,
           monthlyBudget: user.monthlyBudget || 0,
           montosOcultos: user.montosOcultos || false,
+          language: user.language || 'en',
           createdAt: user.createdAt,
         }
       };

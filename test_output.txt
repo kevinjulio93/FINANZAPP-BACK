@@ -1,0 +1,128 @@
+
+> @finanzas/api@ test /Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK
+> jest
+
+(node:40032) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/application/services/AuthService.test.ts
+  ● AuthService › login › should login successfully with valid credentials
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -2,10 +2,13 @@
+        "token": "mock-jwt-token",
+        "user": Object {
+          "createdAt": 2026-02-23T01:44:56.289Z,
+          "email": "test@example.com",
+          "id": "123",
+    +     "language": "en",
+          "monthlyBudget": 0,
+          "montosOcultos": false,
+          "name": "Test User",
+    +     "whatsappPhone": undefined,
+    +     "whatsappVerified": undefined,
+        },
+      }
+
+      89 |         { expiresIn: '24h' }
+      90 |       );
+    > 91 |       expect(result).toEqual({
+         |                      ^
+      92 |         token: mockToken,
+      93 |         user: {
+      94 |           id: mockUser.id,
+
+      at Object.<anonymous> (tests/application/services/AuthService.test.ts:91:22)
+
+PASS tests/infrastructure/repositories/CategoryRepository.test.ts
+PASS tests/infrastructure/services/whatsapp/WhatsAppTemplateControl.test.ts
+  ● Console
+
+    console.log
+      [WHATSAPP] Initialized with WABA_ID: 1583625972915534
+
+      at new WhatsAppTemplateControl (src/infrastructure/services/whatsapp/WhatsAppTemplateControl.ts:16:17)
+
+    console.log
+      [WHATSAPP] Initialized with WABA_ID: 1583625972915534
+
+      at new WhatsAppTemplateControl (src/infrastructure/services/whatsapp/WhatsAppTemplateControl.ts:16:17)
+
+PASS tests/domain/repositories/UserRepository.test.ts
+PASS tests/presentation/controllers/CategoryController.test.ts
+PASS tests/application/services/CategoryService.test.ts
+PASS tests/presentation/controllers/AuthController.test.ts
+PASS tests/DashboardController.test.ts
+  ● Console
+
+    console.error
+      Error getting dashboard: Error: Database error
+          at Object.<anonymous> (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/tests/DashboardController.test.ts:113:27)
+          at Promise.finally.completed (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+          at _callCircusTest (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+          at _runTest (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
+          at /Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:849:7
+          at _runTestsForDescribeBlock (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
+          at _runTestsForDescribeBlock (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+          at _runTestsForDescribeBlock (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+          at run (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
+          at runAndTransformResultsToJestFormat (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
+          at jestAdapter (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/runner.js:101:19)
+          at runTestInternal (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-runner@30.2.0/node_modules/jest-runner/build/index.js:275:16)
+          at runTest (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-runner@30.2.0/node_modules/jest-runner/build/index.js:343:7)
+
+      26 |             return res.status(200).json(data);
+      27 |         } catch (error) {
+    > 28 |             console.error('Error getting dashboard:', error);
+         |                     ^
+      29 |             return res.status(400).json({ message: (error as Error).message });
+      30 |         }
+      31 |     }
+
+      at DashboardController.getDashboard (src/presentation/controllers/DashboardController.ts:28:21)
+      at Object.<anonymous> (tests/DashboardController.test.ts:116:13)
+
+    console.error
+      Error getting monthly comparison: Error: Comparison error
+          at Object.<anonymous> (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/tests/DashboardController.test.ts:157:27)
+          at Promise.finally.completed (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+          at _callCircusTest (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+          at _runTest (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
+          at /Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:849:7
+          at _runTestsForDescribeBlock (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
+          at _runTestsForDescribeBlock (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+          at _runTestsForDescribeBlock (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+          at run (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
+          at runAndTransformResultsToJestFormat (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
+          at jestAdapter (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-circus@30.2.0/node_modules/jest-circus/build/runner.js:101:19)
+          at runTestInternal (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-runner@30.2.0/node_modules/jest-runner/build/index.js:275:16)
+          at runTest (/Users/kevin/Documents/projects/finanzapp/FINANZAPP-BACK/node_modules/.pnpm/jest-runner@30.2.0/node_modules/jest-runner/build/index.js:343:7)
+
+      48 |             return res.status(200).json(comparison);
+      49 |         } catch (error) {
+    > 50 |             console.error('Error getting monthly comparison:', error);
+         |                     ^
+      51 |             return res.status(400).json({ message: (error as Error).message });
+      52 |         }
+      53 |     }
+
+      at DashboardController.getMonthlyComparison (src/presentation/controllers/DashboardController.ts:50:21)
+      at Object.<anonymous> (tests/DashboardController.test.ts:160:13)
+
+PASS tests/CreditService.test.ts
+PASS tests/infrastructure/services/whatsapp/WhatsAppMessageService.test.ts
+PASS tests/DashboardService.test.ts
+
+Test Suites: 1 failed, 10 passed, 11 total
+Tests:       1 failed, 57 passed, 58 total
+Snapshots:   0 total
+Time:        0.898 s, estimated 1 s
+Ran all test suites.
+ ELIFECYCLE  Test failed. See above for more details.

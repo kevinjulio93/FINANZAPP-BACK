@@ -96,6 +96,9 @@ describe('AuthService', () => {
           email: mockUser.email,
           monthlyBudget: 0,
           montosOcultos: false,
+          language: 'en',
+          whatsappPhone: undefined,
+          whatsappVerified: undefined,
           createdAt: mockUser.createdAt,
         },
       });
