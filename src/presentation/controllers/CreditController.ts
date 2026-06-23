@@ -4,12 +4,8 @@ import z from 'zod';
 import { TipoPago } from '../../domain/entities/Credit';
 import { OwnershipValidator } from '../../utils/ownership.validator';
 
-interface AuthRequest extends Request {
-    user?: {
-        id: string;
-        email: string;
-    };
-}
+import { t } from '../../infrastructure/i18n/translate';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 const createCreditSchema = z.object({
     nombre: z.string().min(1),
@@ -33,17 +29,15 @@ const simulacionSchema = z.object({
 export class CreditController {
     constructor(private creditService: CreditService) { }
 
-    private handleError(res: Response, error: any) {
+    private handleError(res: Response, req: AuthRequest, error: any) {
+        const lang = req.user?.language || 'en';
         if (error instanceof z.ZodError) {
-            return res.status(400).json({ message: 'Datos inválidos', errors: error.errors });
+            return res.status(400).json({
+                message: t(lang, "errors.invalidData"),
+                errors: error.errors
+            });
         }
-        if (error.message === 'Crédito no encontrado') {
-            return res.status(404).json({ message: error.message });
-        }
-        if (error.message === 'No autorizado') {
-            return res.status(403).json({ message: error.message });
-        }
-        return res.status(400).json({ message: error.message });
+        return res.status(400).json({ message: t(lang, error.message) });
     }
 
     async createCredit(req: AuthRequest, res: Response): Promise<Response> {
@@ -58,7 +52,7 @@ export class CreditController {
 
             return res.status(201).json(credit);
         } catch (error) {
-            return this.handleError(res, error);
+            return this.handleError(res, req, error);
         }
     }
 
@@ -68,7 +62,7 @@ export class CreditController {
             const credits = await this.creditService.getCreditsByUserId(userId);
             return res.status(200).json(credits);
         } catch (error) {
-            return this.handleError(res, error);
+            return this.handleError(res, req, error);
         }
     }
 
@@ -78,7 +72,7 @@ export class CreditController {
             const credit = await OwnershipValidator.validateCreditOwnership(this.creditService, id, req.user!.id);
             return res.status(200).json(credit);
         } catch (error) {
-            return this.handleError(res, error);
+            return this.handleError(res, req, error);
         }
     }
 
@@ -89,7 +83,7 @@ export class CreditController {
             const proyeccion = await this.creditService.getProyeccion(id);
             return res.status(200).json(proyeccion);
         } catch (error) {
-            return this.handleError(res, error);
+            return this.handleError(res, req, error);
         }
     }
 
@@ -103,7 +97,7 @@ export class CreditController {
             const simulacion = await this.creditService.simularAbono(id, montoAbono);
             return res.status(200).json(simulacion);
         } catch (error) {
-            return this.handleError(res, error);
+            return this.handleError(res, req, error);
         }
     }
 
@@ -122,7 +116,7 @@ export class CreditController {
 
             return res.status(201).json(abono);
         } catch (error) {
-            return this.handleError(res, error);
+            return this.handleError(res, req, error);
         }
     }
 
@@ -133,7 +127,7 @@ export class CreditController {
             const abonos = await this.creditService.getAbonosByCredit(id);
             return res.status(200).json(abonos);
         } catch (error) {
-            return this.handleError(res, error);
+            return this.handleError(res, req, error);
         }
     }
 
@@ -142,9 +136,10 @@ export class CreditController {
             const { id } = req.params;
             await OwnershipValidator.validateCreditOwnership(this.creditService, id, req.user!.id);
             await this.creditService.deleteCredit(id);
-            return res.status(200).json({ message: 'Crédito eliminado correctamente' });
+            const lang = req.user?.language || 'en';
+            return res.status(200).json({ message: t(lang, 'credits.deleted') });
         } catch (error) {
-            return this.handleError(res, error);
+            return this.handleError(res, req, error);
         }
     }
 }

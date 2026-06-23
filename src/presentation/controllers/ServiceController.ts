@@ -5,11 +5,8 @@ import { CategoryService } from "../../application/services/CategoryService";
 import { ServiceService } from "../../application/services/ServiceService";
 
 
-interface AuthRequest extends Request {
-    user?: {
-        id: string;
-    };
-}
+import { t } from "../../infrastructure/i18n/translate";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 const createServiceSchema = z.object({
     name: z.string(),
@@ -37,11 +34,13 @@ export class ServiceController {
             const category = await this.categoryService.getCategoryById(categoryId);
 
             if (!category) {
-                return res.status(404).json({ message: "Categoría no encontrada" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.categoryNotFound") });
             }
 
             if (category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Categoría no encontrada" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.categoryNotFound") });
             }
 
             const service = await this.serviceService.createService({
@@ -56,9 +55,9 @@ export class ServiceController {
             });
 
             return res.status(201).json(service);
-        } catch (error) {
-            console.error('💥 Error:', error);
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
 
     }
@@ -70,17 +69,20 @@ export class ServiceController {
 
             const category = await this.categoryService.getCategoryById(categoryId);
             if (!category) {
-                return res.status(404).json({ message: "Categoría no encontrada" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.categoryNotFound") });
             }
 
             if (category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Categoría no encontrada" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.categoryNotFound") });
             }
 
             const services = await this.serviceService.getServicesByCategoryId(categoryId);
             return res.status(200).json(services);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -103,8 +105,9 @@ export class ServiceController {
                 parseInt(limit as string)
             );
             return res.status(200).json(response);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -115,19 +118,22 @@ export class ServiceController {
 
             const service = await this.serviceService.getServiceById(serviceId);
             if (!service) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.serviceNotFound") });
             }
 
             const category = await this.categoryService.getCategoryById(service.categoryId.toString());
             if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.serviceNotFound") });
             }
 
             const newService = await this.serviceService.duplicateService(serviceId, userId);
 
             return res.status(201).json(newService);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -139,12 +145,14 @@ export class ServiceController {
 
             const service = await this.serviceService.getServiceById(serviceId);
             if (!service) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.serviceNotFound") });
             }
 
             const category = await this.categoryService.getCategoryById(service.categoryId.toString());
             if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.serviceNotFound") });
             }
 
             const updatedService = await this.serviceService.updateService(serviceId, {
@@ -154,8 +162,9 @@ export class ServiceController {
             });
 
             return res.status(200).json(updatedService);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -166,19 +175,22 @@ export class ServiceController {
 
             const service = await this.serviceService.getServiceById(serviceId);
             if (!service) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.serviceNotFound") });
             }
 
             const category = await this.categoryService.getCategoryById(service.categoryId.toString());
             if (!category || category.userId.toString() !== userId) {
-                return res.status(404).json({ message: "Servicio no encontrado" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, "errors.serviceNotFound") });
             }
 
             await this.serviceService.deleteService(serviceId);
 
             return res.status(204).send();
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 }

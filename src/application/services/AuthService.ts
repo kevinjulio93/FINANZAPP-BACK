@@ -19,7 +19,7 @@ export class AuthService {
   async register(userData: INewUser) {
     const existingUser = await this.userRepository.getUserByEmail(userData.email);
     if (existingUser) {
-      throw new Error('User already exists');
+      throw new Error('errors.userAlreadyExists');
     }
 
     const user = await this.userRepository.createUser(userData);
@@ -34,20 +34,20 @@ export class AuthService {
   async login(credentials: { email: string; password: string }) {
     const user = await this.userRepository.getUserByEmail(credentials.email);
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new Error('errors.invalidCredentials');
     }
 
     if (!user.passwordHash) {
-      throw new Error('This account uses Google Login. Please use Google to sign in.');
+      throw new Error('errors.accountUsesGoogle');
     }
 
     const isPasswordValid = await bcrypt.compare(credentials.password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
+      throw new Error('errors.invalidCredentials');
     }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, language: user.language || 'en' },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
@@ -71,7 +71,7 @@ export class AuthService {
   async getCurrentUser(userId: string) {
     const user = await this.userRepository.getUserById(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error('errors.userNotFound');
     }
 
     return {
@@ -92,21 +92,21 @@ export class AuthService {
     // Validar que el usuario existe
     const existingUser = await this.userRepository.getUserById(userId);
     if (!existingUser) {
-      throw new Error('User not found');
+      throw new Error('errors.userNotFound');
     }
 
     // Si se está actualizando el email, verificar que no esté en uso
     if (updates.email && updates.email !== existingUser.email) {
       const emailInUse = await this.userRepository.getUserByEmail(updates.email);
       if (emailInUse) {
-        throw new Error('Email already in use');
+        throw new Error('errors.emailInUse');
       }
     }
 
     // Actualizar el usuario
     const updatedUser = await this.userRepository.updateUser(userId, updates);
     if (!updatedUser) {
-      throw new Error('Failed to update user');
+      throw new Error('errors.failedToUpdateUser');
     }
 
     return {
@@ -126,7 +126,7 @@ export class AuthService {
   async sendWhatsAppVerificationCode(userId: string) {
     const user = await this.userRepository.getUserById(userId);
     if (!user || !user.whatsappPhone) {
-      throw new Error('User not found or phone not configured');
+      throw new Error('errors.phoneNotConfigured');
     }
 
     // Generate 6 digit code
@@ -151,7 +151,7 @@ export class AuthService {
   async verifyWhatsAppCode(userId: string, code: string) {
     const user = await this.userRepository.getUserById(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error('errors.userNotFound');
     }
 
     if (!user.whatsappVerificationCode || !user.whatsappVerificationExpires) {
@@ -184,7 +184,7 @@ export class AuthService {
 
       const payload = ticket.getPayload();
       if (!payload || !payload.email || !payload.sub) {
-        throw new Error('Invalid Google token');
+        throw new Error('errors.invalidGoogleToken');
       }
 
       const { email, name, sub: googleId } = payload;
@@ -211,7 +211,7 @@ export class AuthService {
       if (!user) throw new Error('Failed to process user');
 
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, language: user.language || 'en' },
         process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '7d' } // 7 days as per US-20 requirements
       );
@@ -232,7 +232,7 @@ export class AuthService {
       };
     } catch (error) {
       console.error('Google login error:', error);
-      throw new Error('Google authentication failed');
+      throw new Error('errors.googleAuthFailed');
     }
   }
 }

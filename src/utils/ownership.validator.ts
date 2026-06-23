@@ -13,12 +13,12 @@ export class OwnershipValidator {
     ) {
         const service = await serviceService.getServiceById(serviceId);
         if (!service) {
-            throw new Error("Servicio no encontrado");
+            throw new Error("errors.serviceNotFound");
         }
 
         const category = await categoryService.getCategoryById(service.categoryId.toString());
         if (!category || category.userId.toString() !== userId) {
-            throw new Error("Servicio no encontrado");
+            throw new Error("errors.serviceNotFound");
         }
 
         return { service, category };
@@ -33,7 +33,7 @@ export class OwnershipValidator {
     ) {
         const pago = await pagoService.getPagoById(pagoId);
         if (!pago) {
-            throw new Error("Pago no encontrado");
+            throw new Error("errors.paymentNotFound");
         }
 
         const { service, category } = await this.validateServiceAndCategory(
@@ -43,7 +43,7 @@ export class OwnershipValidator {
             userId
         ).catch(() => {
             // If service/category check fails, we still say "Pago no encontrado" for security/consistency
-            throw new Error("Pago no encontrado");
+            throw new Error("errors.paymentNotFound");
         });
 
         return { pago, service, category };
@@ -56,7 +56,7 @@ export class OwnershipValidator {
     ) {
         const category = await categoryService.getCategoryById(categoryId);
         if (!category || category.userId.toString() !== userId) {
-            throw new Error("Categoría no encontrada");
+            throw new Error("errors.categoryNotFound");
         }
         return category;
     }
@@ -69,11 +69,11 @@ export class OwnershipValidator {
         const credit = await creditService.getCreditById(creditId);
 
         if (!credit) {
-            throw new Error("Crédito no encontrado");
+            throw new Error("errors.creditNotFound");
         }
 
         if (credit.userId.toString() !== userId) {
-            throw new Error("No autorizado");
+            throw new Error("errors.unauthorized");
         }
 
         return credit;

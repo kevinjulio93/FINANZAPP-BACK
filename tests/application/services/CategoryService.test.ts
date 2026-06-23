@@ -30,18 +30,28 @@ describe('CategoryService', () => {
       findById: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      findByName: jest.fn(),
     };
     categoryService = new CategoryService(mockCategoryRepository);
   });
 
   describe('createCategory', () => {
     it('should create a category successfully', async () => {
+      (mockCategoryRepository.findByName as jest.Mock).mockResolvedValue(null);
       (mockCategoryRepository.create as jest.Mock).mockResolvedValue(mockCategory);
 
       const result = await categoryService.createCategory(mockCreateCategory);
 
+      expect(mockCategoryRepository.findByName).toHaveBeenCalledWith(mockCreateCategory.userId, mockCreateCategory.name);
       expect(mockCategoryRepository.create).toHaveBeenCalledWith(mockCreateCategory);
       expect(result).toEqual(mockCategory);
+    });
+
+    it('should throw an error if category already exists', async () => {
+      (mockCategoryRepository.findByName as jest.Mock).mockResolvedValue(mockCategory);
+
+      await expect(categoryService.createCategory(mockCreateCategory)).rejects.toThrow("CATEGORY_ALREADY_EXISTS");
+      expect(mockCategoryRepository.create).not.toHaveBeenCalled();
     });
   });
 
@@ -86,14 +96,36 @@ describe('CategoryService', () => {
 
   describe('updateCategory', () => {
     it('should update category successfully', async () => {
-      const updateData = { name: 'Updated Food' };
+      const updateData = { name: 'Updated Food', userId: 'user123' };
       const updatedCategory = { ...mockCategory, name: 'Updated Food' };
+      (mockCategoryRepository.findByName as jest.Mock).mockResolvedValue(null);
       (mockCategoryRepository.update as jest.Mock).mockResolvedValue(updatedCategory);
 
       const result = await categoryService.updateCategory('cat123', updateData);
 
+      expect(mockCategoryRepository.findByName).toHaveBeenCalledWith('user123', 'Updated Food');
       expect(mockCategoryRepository.update).toHaveBeenCalledWith('cat123', updateData);
       expect(result).toEqual(updatedCategory);
+    });
+
+    it('should throw an error if updating to an existing category name', async () => {
+      const updateData = { name: 'Existing Category', userId: 'user123' };
+      const anotherCategory = { ...mockCategory, id: 'cat456', name: 'Existing Category' };
+      (mockCategoryRepository.findByName as jest.Mock).mockResolvedValue(anotherCategory);
+
+      await expect(categoryService.updateCategory('cat123', updateData)).rejects.toThrow("CATEGORY_ALREADY_EXISTS");
+      expect(mockCategoryRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should update successfully if name stays the same (same ID)', async () => {
+      const updateData = { name: 'Food', userId: 'user123' }; // mockCategory.name is 'Food'
+      (mockCategoryRepository.findByName as jest.Mock).mockResolvedValue(mockCategory); // same ID 'cat123'
+      (mockCategoryRepository.update as jest.Mock).mockResolvedValue(mockCategory);
+
+      const result = await categoryService.updateCategory('cat123', updateData);
+
+      expect(result).toEqual(mockCategory);
+      expect(mockCategoryRepository.update).toHaveBeenCalled();
     });
 
     it('should return null if category not found', async () => {

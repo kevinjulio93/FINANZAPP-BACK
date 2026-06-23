@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { ImportService } from "../../application/services/ImportService";
 
-interface AuthRequest extends Request {
-    user?: { id: string };
-}
+import { t } from "../../infrastructure/i18n/translate";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 export class ImportController {
     constructor(private importService: ImportService) { }
@@ -32,11 +31,13 @@ export class ImportController {
                 // Legacy: parse CSV server-side
                 rows = this.importService.parseCsv(csvContent);
             } else {
-                return res.status(400).json({ message: "Se requiere csvContent o rows[]" });
+                const lang = req.user?.language || 'en';
+                return res.status(400).json({ message: t(lang, "errors.requiredFields") });
             }
 
             if (rows.length === 0) {
-                return res.status(400).json({ message: "No se encontraron filas válidas" });
+                const lang = req.user?.language || 'en';
+                return res.status(400).json({ message: t(lang, "errors.importInvalidData") });
             }
 
             // IA analysis
@@ -55,8 +56,9 @@ export class ImportController {
 
             return res.status(200).json({ analysis, summary, categories });
         } catch (error: any) {
+            const lang = req.user?.language || 'en';
             console.error('Import Analyze Error:', error);
-            return res.status(500).json({ message: error.message || "Error al analizar el archivo" });
+            return res.status(500).json({ message: t(lang, error.message || "errors.importAnalysisError") });
         }
     }
 
@@ -71,7 +73,8 @@ export class ImportController {
             const { confirmations } = req.body;
 
             if (!confirmations || !Array.isArray(confirmations) || confirmations.length === 0) {
-                return res.status(400).json({ message: "Se requiere al menos una confirmación" });
+                const lang = req.user?.language || 'en';
+                return res.status(400).json({ message: t(lang, "errors.requiredFields") });
             }
 
             const result = await this.importService.confirmImport(userId, confirmations.map((c: any) => ({
@@ -81,8 +84,9 @@ export class ImportController {
 
             return res.status(200).json(result);
         } catch (error: any) {
+            const lang = req.user?.language || 'en';
             console.error('Import Confirm Error:', error);
-            return res.status(500).json({ message: error.message || "Error al confirmar la importación" });
+            return res.status(500).json({ message: t(lang, error.message || "errors.importConfirmError") });
         }
     }
 }

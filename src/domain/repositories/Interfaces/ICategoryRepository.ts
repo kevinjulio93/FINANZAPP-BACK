@@ -7,5 +7,6 @@ export interface ICategoryRepository {
     findByUserId(userId: string): Promise<ICategory[]>;
     update(id: string, data: Partial<ICreateCategory>): Promise<ICategory | null>;
     delete(id: string): Promise<boolean>;
+    findByName(userId: string, name: string): Promise<ICategory | null>;
     findByUserIdPaginated(userId: string, search?: string, page?: number, limit?: number): Promise<IPaginatedResponse<ICategory>>;
 }

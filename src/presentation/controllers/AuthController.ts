@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import z from 'zod';
 import { AuthService } from '../../application/services/AuthService';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { t } from '../../infrastructure/i18n/translate';
 
 const registerSchema = z.object({ name: z.string(), email: z.string().email(), password: z.string().min(6) });
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(6) });
@@ -20,7 +21,7 @@ export class AuthController {
             const user = await this.authService.register({ name, email, password });
             return res.status(201).json(user);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return res.status(400).json({ message: t('es', (error as Error).message) });
         }
     }
 
@@ -30,7 +31,7 @@ export class AuthController {
             const result = await this.authService.login({ email, password });
             return res.status(200).json(result);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return res.status(400).json({ message: t('es', (error as Error).message) });
         }
     }
 
@@ -38,13 +39,14 @@ export class AuthController {
         try {
             const userId = req.user?.id;
             if (!userId) {
-                return res.status(401).json({ message: "Unauthorized" });
+                return res.status(401).json({ message: t('en', "errors.unauthorized") });
             }
 
             const user = await this.authService.getCurrentUser(userId);
             return res.status(200).json(user);
-        } catch (error) {
-            return res.status(404).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(404).json({ message: t(lang, error.message) });
         }
     }
 
@@ -52,7 +54,7 @@ export class AuthController {
         try {
             const userId = req.user?.id;
             if (!userId) {
-                return res.status(401).json({ message: "Unauthorized" });
+                return res.status(401).json({ message: t('en', "errors.unauthorized") });
             }
 
             const updateSchema = z.object({
@@ -68,14 +70,15 @@ export class AuthController {
 
             const updatedUser = await this.authService.updateUser(userId, data);
             return res.status(200).json(updatedUser);
-        } catch (error) {
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
             if (error instanceof z.ZodError) {
                 return res.status(400).json({
-                    message: "Validation error",
+                    message: t(lang, "errors.invalidData"),
                     errors: error.errors
                 });
             }
-            return res.status(500).json({ message: (error as Error).message });
+            return res.status(500).json({ message: t(lang, error.message) });
         }
     }
 
@@ -83,13 +86,13 @@ export class AuthController {
         try {
             const userId = req.user?.id;
             if (!userId) {
-                return res.status(401).json({ message: "Unauthorized" });
+                return res.status(401).json({ message: t('en', "errors.unauthorized") });
             }
 
             const result = await this.authService.sendWhatsAppVerificationCode(userId);
             return res.status(200).json(result);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return res.status(400).json({ message: t('es', (error as Error).message) });
         }
     }
 
@@ -97,18 +100,19 @@ export class AuthController {
         try {
             const userId = req.user?.id;
             if (!userId) {
-                return res.status(401).json({ message: "Unauthorized" });
+                return res.status(401).json({ message: t('en', "errors.unauthorized") });
             }
 
             const { code } = z.object({ code: z.string().length(6) }).parse(req.body);
 
             const result = await this.authService.verifyWhatsAppCode(userId, code);
             return res.status(200).json(result);
-        } catch (error) {
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
             if (error instanceof z.ZodError) {
-                return res.status(400).json({ message: "Invalid code format" });
+                return res.status(400).json({ message: t(lang, "errors.invalidCode") });
             }
-            return res.status(400).json({ message: (error as Error).message });
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -118,7 +122,7 @@ export class AuthController {
             const result = await this.authService.googleLogin(idToken);
             return res.status(200).json(result);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            return res.status(400).json({ message: t('es', (error as Error).message) });
         }
     }
 }

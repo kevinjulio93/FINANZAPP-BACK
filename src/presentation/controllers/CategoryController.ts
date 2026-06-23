@@ -1,5 +1,8 @@
 import z from "zod";
 import { CategoryService } from "../../application/services/CategoryService";
+import { t } from "../../infrastructure/i18n/translate";
+import { AuthRequest } from "../middleware/auth.middleware";
+import { Response } from "express";
 
 
 const createCategorySchema = z.object({ name: z.string().min(1), color: z.string().min(1) });
@@ -12,20 +15,24 @@ export class CategoryController {
         this.categoryService = categoryService;
     }
 
-    async createCategory(req: any, res: any): Promise<any> {
+    async createCategory(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const { name, color } = createCategorySchema.parse(req.body);
-            const userId = req.user.id; // Assuming user ID is available in req.user
+            const userId = req.user!.id; // Assuming user ID is available in req.user
             const category = await this.categoryService.createCategory({ name, color, userId });
             return res.status(201).json(category);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            if (error.message === "CATEGORY_ALREADY_EXISTS") {
+                return res.status(409).json({ message: t(lang, 'errors.categoryAlreadyExists') });
+            }
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
-    async getCategories(req: any, res: any): Promise<any> {
+    async getCategories(req: AuthRequest, res: Response): Promise<Response> {
         try {
-            const userId = req.user.id;
+            const userId = req.user!.id;
             const { search, page = 1, limit = 10 } = req.query;
 
             // If page is explicitly set to -1, return all (for dropdowns)
@@ -42,38 +49,47 @@ export class CategoryController {
             );
             return res.status(200).json(response);
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, (error as Error).message) });
         }
     }
 
-    async updateCategory(req: any, res: any): Promise<any> {
+    async updateCategory(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
             const { name, color } = createCategorySchema.parse(req.body);
-            const category = await this.categoryService.updateCategory(id, { name, color });
+            const userId = req.user!.id;
+            const category = await this.categoryService.updateCategory(id, { name, color, userId });
 
             if (!category) {
-                return res.status(404).json({ message: "Category not found" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, 'errors.categoryNotFound') });
             }
 
             return res.status(200).json(category);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            if (error.message === "CATEGORY_ALREADY_EXISTS") {
+                return res.status(409).json({ message: t(lang, 'errors.categoryAlreadyExists') });
+            }
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
-    async deleteCategory(req: any, res: any): Promise<any> {
+    async deleteCategory(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
             const result = await this.categoryService.deleteCategory(id);
 
             if (!result) {
-                return res.status(404).json({ message: "Category not found" });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, 'errors.categoryNotFound') });
             }
 
             return res.status(204).send();
         } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, (error as Error).message) });
         }
     }
 }

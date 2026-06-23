@@ -65,6 +65,22 @@ export class CategoryRepository implements ICategoryRepository {
         };
     }
 
+    async findByName(userId: string, name: string): Promise<ICategory | null> {
+        const objectId = new mongoose.Types.ObjectId(userId);
+        const category = await CategoryModel.findOne({
+            userId: objectId,
+            name: { $regex: new RegExp(`^${name}$`, 'i') } // Case insensitive exact match
+        }).lean();
+
+        if (!category) return null;
+
+        return {
+            ...category,
+            id: (category._id as any).toString(),
+            userId: category.userId.toString(),
+        } as unknown as ICategory;
+    }
+
     async findById(id: string): Promise<ICategory | null> {
         try {
 

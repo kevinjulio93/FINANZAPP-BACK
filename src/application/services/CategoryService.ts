@@ -7,6 +7,10 @@ export class CategoryService {
     }
 
     async createCategory(data: { name: string; color: string; userId: string }): Promise<ICategory> {
+        const existing = await this.categoryRepository.findByName(data.userId, data.name);
+        if (existing) {
+            throw new Error("CATEGORY_ALREADY_EXISTS");
+        }
         return this.categoryRepository.create(data);
     }
 
@@ -25,6 +29,12 @@ export class CategoryService {
     }
 
     async updateCategory(id: string, data: Partial<{ name: string; color: string; userId: string }>): Promise<ICategory | null> {
+        if (data.name && data.userId) {
+            const existing = await this.categoryRepository.findByName(data.userId, data.name);
+            if (existing && existing.id !== id) {
+                throw new Error("CATEGORY_ALREADY_EXISTS");
+            }
+        }
         return this.categoryRepository.update(id, data);
     }
 

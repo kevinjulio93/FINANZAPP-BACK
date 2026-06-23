@@ -5,12 +5,10 @@ import { ServiceService } from "../../application/services/ServiceService";
 import { CategoryService } from "../../application/services/CategoryService";
 import { StorageService } from "../../infrastructure/services/StorageService";
 import { OwnershipValidator } from "../../utils/ownership.validator";
+import { t } from "../../infrastructure/i18n/translate";
+import { AuthRequest } from "../middleware/auth.middleware";
 
-interface AuthRequest extends Request {
-    user?: {
-        id: string;
-    };
-}
+// AuthRequest is now imported from middleware
 
 const createPagoSchema = z.object({
     serviceId: z.string(),
@@ -55,7 +53,8 @@ export class PagoController {
                     userId
                 );
             } catch (validationError: any) {
-                return res.status(404).json({ message: validationError.message });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, validationError.message) });
             }
 
             const pago = await this.pagoService.createPago({
@@ -64,9 +63,9 @@ export class PagoController {
             });
 
             return res.status(201).json(pago);
-        } catch (error) {
-            console.error('Create pago error:', error);
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -98,8 +97,9 @@ export class PagoController {
                 parseInt(limit as string)
             );
             return res.status(200).json(response);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -119,12 +119,14 @@ export class PagoController {
                 );
                 pago = result.pago;
             } catch (validationError: any) {
-                return res.status(404).json({ message: validationError.message });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, validationError.message) });
             }
 
             return res.status(200).json(pago);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -144,7 +146,8 @@ export class PagoController {
                     userId
                 );
             } catch (validationError: any) {
-                return res.status(404).json({ message: validationError.message });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, validationError.message) });
             }
 
             const updateData: any = { ...data };
@@ -154,8 +157,9 @@ export class PagoController {
 
             const updatedPago = await this.pagoService.updatePago(pagoId, updateData);
             return res.status(200).json(updatedPago);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -173,13 +177,15 @@ export class PagoController {
                     userId
                 );
             } catch (validationError: any) {
-                return res.status(404).json({ message: validationError.message });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, validationError.message) });
             }
 
             await this.pagoService.deletePago(pagoId);
             return res.status(204).send();
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -194,8 +200,9 @@ export class PagoController {
 
             const deletedCount = await this.pagoService.deletePagos(ids);
             return res.status(200).json({ deletedCount });
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -205,18 +212,20 @@ export class PagoController {
             const userId = req.user!.id;
             const pagos = await this.pagoService.getPagosSortedByDate(userId);
             return res.status(200).json(pagos);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
     async getReportePagosByMonth(req: AuthRequest, res: Response): Promise<Response> {
         try {
+            const lang = req.user?.language || 'en';
             const userId = req.user!.id;
             const { mes, año } = req.query;
 
             if (!mes || !año) {
-                return res.status(400).json({ message: "Mes y año son requeridos" });
+                return res.status(400).json({ message: t(lang, "errors.requiredFields") });
             }
 
             const pagos = await this.pagoService.getPagosByMonth(
@@ -225,35 +234,39 @@ export class PagoController {
                 parseInt(año as string)
             );
             return res.status(200).json(pagos);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
     async getReportePagosByYear(req: AuthRequest, res: Response): Promise<Response> {
         try {
+            const lang = req.user?.language || 'en';
             const userId = req.user!.id;
             const { año } = req.query;
 
             if (!año) {
-                return res.status(400).json({ message: "Año es requerido" });
+                return res.status(400).json({ message: t(lang, "errors.requiredFields") });
             }
 
             const pagos = await this.pagoService.getPagosByYear(userId, parseInt(año as string));
             return res.status(200).json(pagos);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
     async getReportePagosByCategoryMonth(req: AuthRequest, res: Response): Promise<Response> {
         try {
+            const lang = req.user?.language || 'en';
             const userId = req.user!.id;
             const { categoryId } = req.params;
             const { año } = req.query;
 
             if (!año) {
-                return res.status(400).json({ message: "Año es requerido" });
+                return res.status(400).json({ message: t(lang, "errors.requiredFields") });
             }
 
             try {
@@ -263,7 +276,8 @@ export class PagoController {
                     userId
                 );
             } catch (validationError: any) {
-                return res.status(404).json({ message: validationError.message });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, validationError.message) });
             }
 
             const reporte = await this.pagoService.getPagosByCategoryGroupedByMonth(
@@ -272,8 +286,9 @@ export class PagoController {
                 parseInt(año as string)
             );
             return res.status(200).json(reporte);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
@@ -289,23 +304,26 @@ export class PagoController {
                     userId
                 );
             } catch (validationError: any) {
-                return res.status(404).json({ message: validationError.message });
+                const lang = req.user?.language || 'en';
+                return res.status(404).json({ message: t(lang, validationError.message) });
             }
 
             const pagos = await this.pagoService.getPagosByCategorySortedByDate(userId, categoryId);
             return res.status(200).json(pagos);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
     async getMonthlyStats(req: AuthRequest, res: Response): Promise<Response> {
         try {
+            const lang = req.user?.language || 'en';
             const userId = req.user!.id;
             const { mes, año } = req.query;
 
             if (!mes || !año) {
-                return res.status(400).json({ message: "Mes y año son requeridos" });
+                return res.status(400).json({ message: t(lang, "errors.requiredFields") });
             }
 
             const stats = await this.pagoService.getMonthlyStats(
@@ -314,35 +332,39 @@ export class PagoController {
                 parseInt(año as string)
             );
             return res.status(200).json(stats);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
     async getServiceAverages(req: AuthRequest, res: Response): Promise<Response> {
         try {
+            const lang = req.user?.language || 'en';
             const userId = req.user!.id;
             const { serviceId } = req.params;
 
             const averages = await this.pagoService.getServiceAverages(userId, serviceId);
 
             if (!averages || averages.length === 0) {
-                return res.status(404).json({ message: "No hay datos suficientes para este servicio" });
+                return res.status(404).json({ message: t(lang, "errors.insufficientData") });
             }
 
             return res.status(200).json(averages[0]);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
     async getPaymentReport(req: AuthRequest, res: Response): Promise<Response> {
         try {
+            const lang = req.user?.language || 'en';
             const userId = req.user!.id;
             const { mes, año } = req.query;
 
             if (!año) {
-                return res.status(400).json({ message: "Año es requerido" });
+                return res.status(400).json({ message: t(lang, "errors.requiredFields") });
             }
 
             const report = await this.pagoService.getPaymentReport(
@@ -352,22 +374,25 @@ export class PagoController {
             );
 
             return res.status(200).json(report);
-        } catch (error) {
-            return res.status(400).json({ message: (error as Error).message });
+        } catch (error: any) {
+            const lang = req.user?.language || 'en';
+            return res.status(400).json({ message: t(lang, error.message) });
         }
     }
 
     async uploadSupport(req: AuthRequest, res: Response): Promise<Response> {
         try {
+            const lang = req.user?.language || 'en';
             if (!req.file) {
-                return res.status(400).json({ message: "No se subió ningún archivo" });
+                return res.status(400).json({ message: t(lang, "errors.noFileUploaded") });
             }
 
             const url = await this.storageService.uploadFile(req.file as any);
             return res.status(200).json({ url });
         } catch (error) {
+            const lang = req.user?.language || 'en';
             console.error('Upload support error:', error);
-            return res.status(500).json({ message: "Error al subir el archivo" });
+            return res.status(500).json({ message: t(lang, "errors.uploadError") });
         }
     }
 }
