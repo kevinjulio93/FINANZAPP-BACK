@@ -21,11 +21,7 @@ ENV PORT=4000
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-COPY package.json ./
-
-RUN corepack enable && corepack prepare pnpm@10 --activate && \
-    pnpm rebuild && \
-    pnpm prune --prod
+COPY package.json pnpm-lock.yaml ./
 
 EXPOSE 4000
 
