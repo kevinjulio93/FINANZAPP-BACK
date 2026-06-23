@@ -1,38 +1,12 @@
 services:
-  mongodb:
-    image: mongo:latest
-    container_name: finanzas-mongodb
+  backend:
+    image: kevinjulio93/finanzapp-backend:latest
+    container_name: finanzapp-backend
     restart: always
     ports:
-      - '27017:27017'
+      - '4000:4000'
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
-      MONGO_INITDB_DATABASE: finanzas
-    volumes:
-      - mongodb_data:/data/db
-
-  mongo-backup:
-    image: mongo:latest
-    container_name: finanzas-mongodb-backup
-    restart: always
-    depends_on:
-      - mongodb
-    environment:
-      MONGO_HOST: mongodb
-      MONGO_USER: admin
-      MONGO_PASS: admin123
-      BACKUP_RETENTION_DAYS: 30
-    volumes:
-      - /Users/kevin/Documents/finanzas-backups:/backups
-      - ./scripts/backup.sh:/backup.sh:ro
-    # Run every Sunday at 02:00 AM
-    entrypoint: >
-      bash -c "
-        chmod +x /backup.sh &&
-        echo '0 2 * * 0 /backup.sh >> /backups/backup.log 2>&1' | crontab - &&
-        crond -f
-      "
-
-volumes:
-  mongodb_data:
+      PORT: '4000'
+      NODE_ENV: production
+      MONGO_URI: '${MONGO_URI}'
+      JWT_SECRET: '${JWT_SECRET}'
