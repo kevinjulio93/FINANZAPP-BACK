@@ -3,16 +3,11 @@ name: Build & Push Backend Docker Image
 on:
   push:
     branches: [main]
-    paths:
-      - 'FINANZAPP-BACK/**'
   workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: FINANZAPP-BACK
 
     steps:
       - name: Checkout repository
