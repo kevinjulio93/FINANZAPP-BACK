@@ -62,7 +62,7 @@ describe('AuthService', () => {
     it('should throw error if user already exists', async () => {
       (mockUserRepository.getUserByEmail as jest.Mock).mockResolvedValue(mockUser);
 
-      await expect(authService.register(mockNewUser)).rejects.toThrow('User already exists');
+      await expect(authService.register(mockNewUser)).rejects.toThrow('errors.userAlreadyExists');
       expect(mockUserRepository.createUser).not.toHaveBeenCalled();
     });
   });
@@ -84,7 +84,7 @@ describe('AuthService', () => {
       expect(mockUserRepository.getUserByEmail).toHaveBeenCalledWith(credentials.email);
       expect(bcrypt.compare).toHaveBeenCalledWith(credentials.password, mockUser.passwordHash);
       expect(jwt.sign).toHaveBeenCalledWith(
-        { userId: mockUser.id, email: mockUser.email },
+        { userId: mockUser.id, email: mockUser.email, language: 'en' },
         expect.any(String),
         { expiresIn: '24h' }
       );
@@ -107,7 +107,7 @@ describe('AuthService', () => {
     it('should throw error if user does not exist', async () => {
       (mockUserRepository.getUserByEmail as jest.Mock).mockResolvedValue(null);
 
-      await expect(authService.login(credentials)).rejects.toThrow('Invalid credentials');
+      await expect(authService.login(credentials)).rejects.toThrow('errors.invalidCredentials');
       expect(bcrypt.compare).not.toHaveBeenCalled();
     });
 
@@ -115,7 +115,7 @@ describe('AuthService', () => {
       (mockUserRepository.getUserByEmail as jest.Mock).mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(authService.login(credentials)).rejects.toThrow('Invalid credentials');
+      await expect(authService.login(credentials)).rejects.toThrow('errors.invalidCredentials');
       expect(jwt.sign).not.toHaveBeenCalled();
     });
   });

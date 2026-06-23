@@ -8,6 +8,8 @@ jest.mock('../../../src/application/services/CategoryService');
 interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
+    email: string;
+    language: string;
   };
 }
 
@@ -42,7 +44,7 @@ describe('CategoryController', () => {
     mockRequest = {
       body: {},
       query: {},
-      user: { id: 'user123' },
+      user: { id: 'user123', email: 'test@example.com', language: 'en' },
     };
   });
 

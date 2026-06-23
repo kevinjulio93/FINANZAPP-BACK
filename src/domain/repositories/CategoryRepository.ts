@@ -21,4 +21,7 @@ export class CategoryRepository implements ICategoryRepository {
 	delete(id: string): Promise<boolean> {
 		throw new Error("Method not implemented.");
 	}
+	findByName(userId: string, name: string): Promise<ICategory | null> {
+		throw new Error("Method not implemented.");
+	}
 }
