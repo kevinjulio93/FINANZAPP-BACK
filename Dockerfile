@@ -26,5 +26,3 @@ COPY package.json pnpm-lock.yaml ./
 EXPOSE 4000
 
 CMD ["node", "dist/index.js"]
-
-CMD ["node", "dist/index.js"]
