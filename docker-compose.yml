@@ -11,7 +11,7 @@ services:
       MONGO_INITDB_DATABASE: finanzas
 
   backend:
-    image: kevinjulio93/finanzapp-backend:9789eb6
+    image: kevinjulio93/finanzapp-backend:prod
     container_name: finanzapp-backend
     restart: always
     ports:
