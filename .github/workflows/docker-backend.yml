@@ -28,7 +28,7 @@ jobs:
         with:
           images: kevinjulio93/finanzapp-backend
           tags: |
-            type=sha,prefix=,suffix=,format=short
+            type=raw,value=v${{ github.run_number }}
             type=raw,value=prod,enable={{is_default_branch}}
 
       - name: Build and push Docker image
