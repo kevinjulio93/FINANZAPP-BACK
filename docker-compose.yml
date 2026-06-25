@@ -12,6 +12,7 @@ services:
 
   backend:
     image: kevinjulio93/finanzapp-backend:prod
+    pull_policy: always
     container_name: finanzapp-backend
     restart: always
     ports:
