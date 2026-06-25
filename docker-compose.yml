@@ -21,6 +21,7 @@ services:
       NODE_ENV: production
       MONGO_URI: 'mongodb://admin:admin123@mongodb:27017/finanzas?authSource=admin'
       JWT_SECRET: '${JWT_SECRET}'
+      GOOGLE_CLIENT_ID: '${GOOGLE_CLIENT_ID}'
     depends_on:
       - mongodb
 

@@ -35,7 +35,12 @@ const schedulerService = new SchedulerService(notificationService);
 schedulerService.start();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://finanzapp.juliomarquez.dev', 'https://www.finanzapp.juliomarquez.dev']
+    : ['http://localhost:3001', 'http://localhost:3000'],
+  credentials: true,
+}));
 app.use(express.json());
 
 // Swagger documentation
