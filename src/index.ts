@@ -19,15 +19,15 @@ import { NotificationService } from './application/services/NotificationService'
 import { UserRepository } from './domain/repositories/UserRepository';
 import { AIMessageService } from './application/services/AIMessageService';
 import { WhatsAppService } from './infrastructure/services/WhatsAppService';
-import { VertexService } from './infrastructure/services/VertexService';
+import { OllamaService } from './infrastructure/services/OllamaService';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Initialize Scheduler
 const userRepository = new UserRepository();
-const vertexService = new VertexService();
-const aiMessageService = new AIMessageService(vertexService);
+const ollamaService = new OllamaService();
+const aiMessageService = new AIMessageService(ollamaService);
 const whatsappService = new WhatsAppService();
 const notificationService = new NotificationService(userRepository, aiMessageService, whatsappService);
 const schedulerService = new SchedulerService(notificationService);

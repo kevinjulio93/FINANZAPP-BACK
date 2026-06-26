@@ -1,9 +1,9 @@
-import { VertexService } from "../../infrastructure/services/VertexService";
+import { IOpenAIService } from "../../domain/services/Interfaces/IAnalysisService";
 import { IService } from "../../domain/entities/Service";
 import { IUser } from "../../domain/entities/User";
 
 export class AIMessageService {
-    constructor(private vertexService: VertexService) { }
+    constructor(private aiService: IOpenAIService) { }
 
     async generateReminder(user: IUser, service: IService, diasAntes: number): Promise<string> {
         const prompt = `
@@ -23,7 +23,7 @@ export class AIMessageService {
         - NO pongas comillas al inicio o final.
         `;
 
-        const response = await this.vertexService.generateResponse(user.id, prompt);
+        const response = await this.aiService.generateResponse(user.id, prompt);
         return response.content?.trim() || `Recordatorio: ${service.name} vence en ${diasAntes} días.`;
     }
 }
