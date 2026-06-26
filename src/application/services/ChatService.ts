@@ -151,7 +151,9 @@ export class ChatService {
 
             for (const toolCall of aiResponse.tool_calls) {
                 const fnName = toolCall.function.name;
-                const args = JSON.parse(toolCall.function.arguments);
+                const args = typeof toolCall.function.arguments === 'string'
+                    ? JSON.parse(toolCall.function.arguments)
+                    : toolCall.function.arguments;
                 let result = null;
 
                 console.log(`Executing tool: ${fnName}`, args);
