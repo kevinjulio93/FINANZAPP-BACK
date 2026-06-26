@@ -15,7 +15,7 @@ export class OllamaResponseParser {
             type: 'function',
             function: {
                 name: tc.function.name,
-                arguments: JSON.stringify(tc.function.arguments),
+                arguments: tc.function.arguments,
             },
         }));
     }
