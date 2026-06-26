@@ -1,10 +1,12 @@
 import { SYSTEM_INSTRUCTION_BASE, FINANCIAL_CONTEXT_HEADER, OLLAMA_CONFIG } from "./ollama.constants";
 
+const KNOWLEDGE_HEADER = `\n\n📚 CONOCIMIENTO DE FINANZAPP:\n`;
+
 export class OllamaMessageBuilder {
     build(userMessage: string, context?: any): any[] {
         const messages: any[] = [];
 
-        const systemContent = this.buildSystemInstruction(context?.financialContext);
+        const systemContent = this.buildSystemInstruction(context?.financialContext, context?.knowledge);
         messages.push({ role: 'system', content: systemContent });
 
         if (context?.history) {
@@ -20,10 +22,17 @@ export class OllamaMessageBuilder {
         return messages;
     }
 
-    private buildSystemInstruction(financialContext?: string): string {
+    private buildSystemInstruction(financialContext?: string, knowledge?: string): string {
+        let instruction = SYSTEM_INSTRUCTION_BASE;
+
         if (financialContext) {
-            return `${SYSTEM_INSTRUCTION_BASE}${FINANCIAL_CONTEXT_HEADER}${financialContext}`;
+            instruction += `${FINANCIAL_CONTEXT_HEADER}${financialContext}`;
         }
-        return SYSTEM_INSTRUCTION_BASE;
+
+        if (knowledge) {
+            instruction += `${KNOWLEDGE_HEADER}${knowledge}`;
+        }
+
+        return instruction;
     }
 }

@@ -2,6 +2,8 @@ import { Ollama } from 'ollama';
 import { IOpenAIService } from "../../domain/services/Interfaces/IAnalysisService";
 import { OllamaMessageBuilder } from "./ollama/ollama-message-builder";
 import { OllamaResponseParser } from "./ollama/ollama-response-parser";
+import { OllamaKnowledgeRetriever } from "./ollama/ollama-knowledge-retriever";
+import { OllamaMessageFilter } from "./ollama/ollama-message-filter";
 import { OLLAMA_CONFIG, OLLAMA_ERRORS } from "./ollama/ollama.constants";
 
 export class OllamaService implements IOpenAIService {
@@ -9,6 +11,8 @@ export class OllamaService implements IOpenAIService {
     private model: string;
     private messageBuilder: OllamaMessageBuilder;
     private responseParser: OllamaResponseParser;
+    private knowledgeRetriever: OllamaKnowledgeRetriever;
+    private messageFilter: OllamaMessageFilter;
 
     constructor() {
         this.ollama = new Ollama({
@@ -20,10 +24,25 @@ export class OllamaService implements IOpenAIService {
         this.model = process.env.OLLAMA_MODEL || OLLAMA_CONFIG.DEFAULT_MODEL;
         this.messageBuilder = new OllamaMessageBuilder();
         this.responseParser = new OllamaResponseParser();
+        this.knowledgeRetriever = new OllamaKnowledgeRetriever();
+        this.messageFilter = new OllamaMessageFilter();
     }
 
     async generateResponse(userId: string, message: string, context?: any, tools?: any[]): Promise<any> {
-        const messages = this.messageBuilder.build(message, context);
+        // Filter blocked messages before sending to the model
+        const filterResult = this.messageFilter.filter(message);
+        if (filterResult.blocked) {
+            return {
+                role: 'assistant',
+                content: filterResult.response,
+            };
+        }
+
+        // Retrieve relevant knowledge from the knowledge base
+        const knowledge = this.knowledgeRetriever.retrieve(message);
+        const enrichedContext = { ...context, knowledge };
+
+        const messages = this.messageBuilder.build(message, enrichedContext);
 
         try {
             const options: any = {
