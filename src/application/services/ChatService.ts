@@ -1,6 +1,8 @@
 import { IAnalysisService, IOpenAIService } from "../../domain/services/Interfaces/IAnalysisService";
 import { IPagoRepository } from "../../domain/repositories/Interfaces/IPagoRepository";
 import { IServiceRepository } from "../../domain/repositories/Interfaces/IServiceRepository";
+import { ICategoryRepository } from "../../domain/repositories/Interfaces/ICategoryRepository";
+import { IDashboardRepository } from "../../domain/repositories/Interfaces/IDashboardRepository";
 import { AnalysisService } from "./AnalysisService";
 
 export class ChatService {
@@ -8,17 +10,23 @@ export class ChatService {
     private openAIService: IOpenAIService;
     private pagoRepository: IPagoRepository;
     private serviceRepository: IServiceRepository;
+    private categoryRepository: ICategoryRepository;
+    private dashboardRepository: IDashboardRepository;
 
     constructor(
         analysisService: AnalysisService,
         openAIService: IOpenAIService,
         pagoRepository: IPagoRepository,
-        serviceRepository: IServiceRepository
+        serviceRepository: IServiceRepository,
+        categoryRepository: ICategoryRepository,
+        dashboardRepository: IDashboardRepository
     ) {
         this.analysisService = analysisService;
         this.openAIService = openAIService;
         this.pagoRepository = pagoRepository;
         this.serviceRepository = serviceRepository;
+        this.categoryRepository = categoryRepository;
+        this.dashboardRepository = dashboardRepository;
     }
 
     async processMessage(userId: string, message: string, history: any[] = []): Promise<any> {
@@ -56,6 +64,57 @@ export class ChatService {
                 function: {
                     name: "get_projections",
                     description: "Genera una proyección de gastos para los próximos 6 meses.",
+                    parameters: {
+                        type: "object",
+                        properties: {},
+                        required: []
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "get_services",
+                    description: "Obtiene todos los servicios del usuario con su estado, monto estimado y fecha límite de pago.",
+                    parameters: {
+                        type: "object",
+                        properties: {},
+                        required: []
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "get_categories",
+                    description: "Obtiene todas las categorías del usuario con su color.",
+                    parameters: {
+                        type: "object",
+                        properties: {},
+                        required: []
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "get_dashboard",
+                    description: "Obtiene las métricas del dashboard: resumen de gastos, servicios más caros, gastos por categoría, tendencias de pago y próximos pagos.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            mes: { type: "number", description: "Mes (1-12), opcional. Por defecto mes actual." },
+                            año: { type: "number", description: "Año (YYYY), opcional. Por defecto año actual." }
+                        },
+                        required: []
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "get_upcoming_payments",
+                    description: "Obtiene los servicios próximos a vencer (próximos 7 días) y los servicios vencidos.",
                     parameters: {
                         type: "object",
                         properties: {},
@@ -121,6 +180,55 @@ export class ChatService {
 
                         case "get_projections":
                             result = await this.analysisService.getProjections(userId);
+                            break;
+
+                        case "get_services":
+                            const services = await this.serviceRepository.findByUserId(userId);
+                            result = services.map((s: any) => ({
+                                name: s.name,
+                                montoEstimado: s.montoEstimado,
+                                estado: s.estado,
+                                fechaLimitePago: s.fechaLimitePago,
+                                categoria: s.categoryId,
+                            }));
+                            break;
+
+                        case "get_categories":
+                            const categories = await this.categoryRepository.findByUserId(userId);
+                            result = categories.map((c: any) => ({
+                                name: c.name,
+                                color: c.color,
+                            }));
+                            break;
+
+                        case "get_dashboard":
+                            const month = args.mes || currentMonth;
+                            const dashYear = args.año || currentYear;
+                            result = await this.dashboardRepository.getDashboardData(userId, month, dashYear);
+                            break;
+
+                        case "get_upcoming_payments":
+                            const allServices = await this.serviceRepository.findByUserId(userId);
+                            const today = new Date();
+                            const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                            result = {
+                                proximosAVencer: allServices
+                                    .filter((s: any) => s.fechaLimitePago && s.fechaLimitePago >= today && s.fechaLimitePago <= sevenDaysFromNow)
+                                    .map((s: any) => ({
+                                        name: s.name,
+                                        monto: s.montoEstimado,
+                                        vence: s.fechaLimitePago,
+                                        estado: s.estado,
+                                    })),
+                                vencidos: allServices
+                                    .filter((s: any) => s.fechaLimitePago && s.fechaLimitePago < today && s.estado !== 'PAGADO')
+                                    .map((s: any) => ({
+                                        name: s.name,
+                                        monto: s.montoEstimado,
+                                        vence: s.fechaLimitePago,
+                                        estado: s.estado,
+                                    })),
+                            };
                             break;
 
                         default:
