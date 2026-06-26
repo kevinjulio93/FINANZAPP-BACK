@@ -90,4 +90,41 @@ export class OllamaService implements IOpenAIService {
             };
         }
     }
+
+    async *generateResponseStream(userId: string, message: string, context?: any, tools?: any[]): AsyncGenerator<string, void, unknown> {
+        // Filter blocked messages
+        const filterResult = this.messageFilter.filter(message);
+        if (filterResult.blocked) {
+            yield filterResult.response!;
+            return;
+        }
+
+        // Retrieve relevant knowledge
+        const knowledge = this.knowledgeRetriever.retrieve(message);
+        const enrichedContext = { ...context, knowledge };
+        const chatMessages = this.messageBuilder.build(message, enrichedContext);
+
+        try {
+            const options: any = {
+                model: this.model,
+                messages: chatMessages,
+                stream: true,
+            };
+
+            if (tools && tools.length > 0) {
+                options.tools = tools;
+            }
+
+            const stream = await this.ollama.chat(options) as any;
+
+            for await (const chunk of stream) {
+                if (chunk.message?.content) {
+                    yield chunk.message.content;
+                }
+            }
+        } catch (error) {
+            console.error("Error streaming Ollama:", error);
+            yield OLLAMA_ERRORS.CONNECTION_FAILED;
+        }
+    }
 }

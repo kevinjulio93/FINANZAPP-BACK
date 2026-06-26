@@ -7,4 +7,5 @@ export interface IAnalysisService {
 export interface IOpenAIService {
     generateResponse(userId: string, message: string, context?: any, tools?: any[]): Promise<any>;
     continueConversation(userId: string, messages: any[], tools?: any[]): Promise<any>;
+    generateResponseStream(userId: string, message: string, context?: any, tools?: any[]): AsyncGenerator<string, void, unknown>;
 }

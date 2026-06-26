@@ -22,5 +22,6 @@ const chatService = new ChatService(analysisService, aiService, pagoRepository, 
 const chatController = new ChatController(chatService);
 
 router.post("/", AuthenticationToken, (req, res) => chatController.chat(req as any, res));
+router.post("/stream", AuthenticationToken, (req, res) => chatController.chatStream(req as any, res));
 
 export default router;
