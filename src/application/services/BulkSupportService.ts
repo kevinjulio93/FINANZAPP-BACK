@@ -3,6 +3,8 @@ import { StorageService } from "../../infrastructure/services/StorageService";
 import { IServiceRepository } from "../../domain/repositories/Interfaces/IServiceRepository";
 import { IPagoRepository } from "../../domain/repositories/Interfaces/IPagoRepository";
 import { IOpenAIService } from "../../domain/services/Interfaces/IAnalysisService";
+import { ServiceModel } from "../../infrastructure/models/Service.model";
+import { CategoryModel } from "../../infrastructure/models/Catergory.model";
 
 export interface AnalyzedSupport {
     id: string;
@@ -90,6 +92,24 @@ export class BulkSupportService {
         for (const support of confirmed) {
             if (!support.suggestedServiceId || !support.suggestedMonth || !support.suggestedYear) continue;
 
+            // Move file to structured path: {categoryName}/{year}/{serviceName}/{originalName}
+            let supportUrl: string | undefined;
+            if (support.receiptUrl) {
+                try {
+                    const service = await ServiceModel.findById(support.suggestedServiceId).lean();
+                    if (service) {
+                        const category = await CategoryModel.findById(service.categoryId).lean();
+                        const categoryName = category ? category.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'unknown';
+                        const serviceName = service.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+                        const destKey = `${categoryName}/${support.suggestedYear}/${serviceName}/${support.originalName}`;
+                        supportUrl = await this.storageService.moveFile(support.receiptUrl, destKey);
+                    }
+                } catch (error) {
+                    console.error('Failed to move support file to structured path:', error);
+                    supportUrl = support.receiptUrl;
+                }
+            }
+
             await this.pagoRepository.create({
                 serviceId: support.suggestedServiceId,
                 mes: support.suggestedMonth,
@@ -97,6 +117,7 @@ export class BulkSupportService {
                 valorPagado: support.suggestedAmount || 0,
                 fechaPago: new Date(support.suggestedYear, (support.suggestedMonth || 1) - 1, 1),
                 notas: `Soporte: ${support.originalName}`,
+                supportUrl,
             });
         }
     }

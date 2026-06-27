@@ -42,6 +42,44 @@ export class StorageService {
     }
 
     /**
+     * Downloads a file from a signed URL and uploads it to a new structured path.
+     * Deletes the original file after successful copy.
+     * Returns the new signed URL for the moved file.
+     */
+    async moveFile(sourceUrl: string, destKey: string): Promise<string> {
+        // Download from signed URL
+        const response = await fetch(sourceUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to download file from signed URL: ${response.statusText}`);
+        }
+        const buffer = Buffer.from(await response.arrayBuffer());
+
+        // Upload to new location
+        await this.s3.send(new PutObjectCommand({
+            Bucket: this.bucketName,
+            Key: destKey,
+            Body: buffer,
+        }));
+
+        // Generate new signed URL
+        const newUrl = await getSignedUrl(this.s3, new GetObjectCommand({
+            Bucket: this.bucketName,
+            Key: destKey,
+        }), { expiresIn: 86400 });
+
+        // Delete original file
+        const originalKey = this.extractKeyFromUrl(sourceUrl);
+        if (originalKey) {
+            await this.s3.send(new DeleteObjectCommand({
+                Bucket: this.bucketName,
+                Key: originalKey,
+            }));
+        }
+
+        return newUrl;
+    }
+
+    /**
      * Deletes a file from R2 given its signed URL.
      * Extracts the object key from the URL and sends a DeleteObjectCommand.
      */

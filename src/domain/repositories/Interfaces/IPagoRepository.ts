@@ -8,6 +8,7 @@ export interface ICreatePago {
     fechaPago: Date;
     metodoPago?: string;
     notas?: string;
+    supportUrl?: string;
 }
 
 export interface IPaginatedResponse<T> {
