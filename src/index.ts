@@ -13,6 +13,7 @@ import importRoutes from './presentation/routes/import.routes';
 import comparisonRoutes from './presentation/routes/comparison.routes';
 import whatsappRoutes from './presentation/routes/whatsapp.routes';
 import exportImportRoutes from './presentation/routes/export-import.routes';
+import bulkSupportRoutes from './presentation/routes/bulk-support.routes';
 import { setupSwagger } from './config/swagger';
 import { SchedulerService } from './infrastructure/services/SchedulerService';
 import { NotificationService } from './application/services/NotificationService';
@@ -58,6 +59,7 @@ app.use('/api/import', importRoutes);
 app.use('/api/comparison', comparisonRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/export-import', exportImportRoutes);
+app.use('/api/bulk-support', bulkSupportRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

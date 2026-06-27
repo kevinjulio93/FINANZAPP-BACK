@@ -36,7 +36,12 @@ export const translations = {
             comparisonError: "Error generating comparison",
             comparisonMinMonths: "At least 2 months are required to compare",
             chatMessageRequired: "Message is required",
-            chatError: "Error in chat"
+            chatError: "Error in chat",
+            fileRequired: "No file uploaded",
+            invalidFileType: "Only ZIP files are allowed",
+            invalidSupports: "Invalid supports data",
+            supportsConfirmed: "Supports confirmed successfully",
+            internalError: "Internal server error"
         },
         auth: {
             invalidCredentials: "Invalid email or password",
@@ -87,7 +92,12 @@ export const translations = {
             comparisonError: "Error al generar la comparación",
             comparisonMinMonths: "Se requieren al menos 2 meses para comparar",
             chatMessageRequired: "El mensaje es requerido",
-            chatError: "Error en el chat"
+            chatError: "Error en el chat",
+            fileRequired: "No se subió ningún archivo",
+            invalidFileType: "Solo se permiten archivos ZIP",
+            invalidSupports: "Datos de soportes inválidos",
+            supportsConfirmed: "Soportes confirmados exitosamente",
+            internalError: "Error interno del servidor"
         },
         auth: {
             invalidCredentials: "Correo o contraseña inválidos",
