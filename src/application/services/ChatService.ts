@@ -4,6 +4,7 @@ import { IServiceRepository } from "../../domain/repositories/Interfaces/IServic
 import { ICategoryRepository } from "../../domain/repositories/Interfaces/ICategoryRepository";
 import { IDashboardRepository } from "../../domain/repositories/Interfaces/IDashboardRepository";
 import { AnalysisService } from "./AnalysisService";
+import mongoose from "mongoose";
 
 export class ChatService {
     private analysisService: AnalysisService;
@@ -231,6 +232,26 @@ export class ChatService {
                                         estado: s.estado,
                                     })),
                             };
+                            break;
+
+                        case "create_services":
+                            const createdSvcs: any[] = [];
+                            const svcErrors: string[] = [];
+                            for (const svc of args.services) {
+                                const category = await this.categoryRepository.findByName(userId, svc.categoryName);
+                                if (!category) {
+                                    svcErrors.push(`Categoría "${svc.categoryName}" no encontrada`);
+                                    continue;
+                                }
+                                const newSvc = await this.serviceRepository.create({
+                                    name: svc.name,
+                                    montoEstimado: svc.montoEstimado,
+                                    categoryId: new mongoose.Types.ObjectId(category.id),
+                                    estado: 'PENDIENTE',
+                                }, userId);
+                                createdSvcs.push({ name: newSvc.name, montoEstimado: newSvc.montoEstimado, categoria: category.name, estado: newSvc.estado });
+                            }
+                            result = { creados: createdSvcs, errores: svcErrors.length > 0 ? svcErrors : undefined, totalCreados: createdSvcs.length, totalErrores: svcErrors.length };
                             break;
 
                         default:
@@ -486,6 +507,39 @@ export class ChatService {
                     vencidos: allServices
                         .filter((s: any) => s.fechaLimitePago && s.fechaLimitePago < today && s.estado !== 'PAGADO')
                         .map((s: any) => ({ name: s.name, monto: s.montoEstimado, vence: s.fechaLimitePago, estado: s.estado })),
+                };
+
+            case "create_services":
+                const createdServices: any[] = [];
+                const errors: string[] = [];
+
+                for (const svc of args.services) {
+                    const category = await this.categoryRepository.findByName(userId, svc.categoryName);
+                    if (!category) {
+                        errors.push(`Categoría "${svc.categoryName}" no encontrada`);
+                        continue;
+                    }
+
+                    const newService = await this.serviceRepository.create({
+                        name: svc.name,
+                        montoEstimado: svc.montoEstimado,
+                        categoryId: new mongoose.Types.ObjectId(category.id),
+                        estado: 'PENDIENTE',
+                    }, userId);
+
+                    createdServices.push({
+                        name: newService.name,
+                        montoEstimado: newService.montoEstimado,
+                        categoria: category.name,
+                        estado: newService.estado,
+                    });
+                }
+
+                return {
+                    creados: createdServices,
+                    errores: errors.length > 0 ? errors : undefined,
+                    totalCreados: createdServices.length,
+                    totalErrores: errors.length,
                 };
 
             default:
