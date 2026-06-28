@@ -122,6 +122,32 @@ export class ChatService {
                         required: []
                     }
                 }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "create_services",
+                    description: "Crea múltiples servicios para el usuario. Cada servicio debe tener un nombre, un monto estimado y el nombre de la categoría a la que pertenece. La IA debe buscar la categoría por nombre y asignarla automáticamente.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            services: {
+                                type: "array",
+                                description: "Lista de servicios a crear",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        name: { type: "string", description: "Nombre del servicio" },
+                                        montoEstimado: { type: "number", description: "Monto estimado mensual del servicio" },
+                                        categoryName: { type: "string", description: "Nombre exacto de la categoría a la que pertenece el servicio" }
+                                    },
+                                    required: ["name", "montoEstimado", "categoryName"]
+                                }
+                            }
+                        },
+                        required: ["services"]
+                    }
+                }
             }
         ];
 
