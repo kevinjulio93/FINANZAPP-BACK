@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const R2_ACCOUNT_ID = '505d2a36e8a47ba9a16e346065eea635';
@@ -42,27 +42,27 @@ export class StorageService {
     }
 
     /**
-     * Downloads a file from a signed URL and uploads it to a new structured path.
-     * Deletes the original file after successful copy.
+     * Copies a file within R2 to a new structured path and deletes the original.
+     * Uses CopyObjectCommand (server-side copy, no download/re-upload).
      * Returns the new signed URL for the moved file.
      */
     async moveFile(sourceUrl: string, destKey: string): Promise<string> {
-        // Download from signed URL
-        const response = await fetch(sourceUrl);
-        if (!response.ok) {
-            throw new Error(`Failed to download file from signed URL: ${response.statusText}`);
+        // Extract the source key from the signed URL
+        const sourceKey = this.extractKeyFromUrl(sourceUrl);
+        if (!sourceKey) {
+            throw new Error('Could not extract source key from URL');
         }
-        const buffer = Buffer.from(await response.arrayBuffer());
 
         // Infer content type from file extension
         const ext = destKey.split('.').pop()?.toLowerCase() || '';
         const mimeType = this.getMimeType(ext);
 
-        // Upload to new location
-        await this.s3.send(new PutObjectCommand({
+        // Copy directly within R2 (server-side, no download)
+        await this.s3.send(new CopyObjectCommand({
+            CopySource: `${this.bucketName}/${sourceKey}`,
             Bucket: this.bucketName,
             Key: destKey,
-            Body: buffer,
+            MetadataDirective: 'REPLACE',
             ContentType: mimeType,
         }));
 
@@ -73,13 +73,10 @@ export class StorageService {
         }), { expiresIn: 86400 });
 
         // Delete original file
-        const originalKey = this.extractKeyFromUrl(sourceUrl);
-        if (originalKey) {
-            await this.s3.send(new DeleteObjectCommand({
-                Bucket: this.bucketName,
-                Key: originalKey,
-            }));
-        }
+        await this.s3.send(new DeleteObjectCommand({
+            Bucket: this.bucketName,
+            Key: sourceKey,
+        }));
 
         return newUrl;
     }
