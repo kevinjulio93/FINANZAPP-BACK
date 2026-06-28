@@ -137,4 +137,22 @@ export class StorageService {
         };
         return mimeTypes[ext] || 'application/octet-stream';
     }
+
+    /**
+     * Extracts the original filename from a signed R2 URL.
+     * URL format: .../{folder}/{timestamp}-{originalName}?...
+     */
+    extractFileNameFromUrl(url: string): string | null {
+        try {
+            const key = this.extractKeyFromUrl(url);
+            if (!key) return null;
+            const parts = key.split('/');
+            const fileNamePart = parts[parts.length - 1];
+            // Remove timestamp prefix (e.g., "1743212345678-")
+            const match = fileNamePart.match(/^\d+-(.+)$/);
+            return match ? decodeURIComponent(match[1]) : decodeURIComponent(fileNamePart);
+        } catch {
+            return null;
+        }
+    }
 }

@@ -72,7 +72,9 @@ export class PagoController {
                         const category = await CategoryModel.findById(service.categoryId).lean();
                         const categoryName = category ? category.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'unknown';
                         const serviceName = service.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        const destKey = `${categoryName}/${data.año}/${serviceName}/${data.mes}/${pago._id}`;
+                        // Extract original filename from the signed URL (remove timestamp prefix)
+                        const originalName = this.storageService.extractFileNameFromUrl(data.supportUrl) || pago._id.toString();
+                        const destKey = `${categoryName}/${data.año}/${serviceName}/${data.mes}/${originalName}`;
                         const newUrl = await this.storageService.moveFile(data.supportUrl, destKey);
                         await this.pagoService.updatePago(pago._id.toString(), { supportUrl: newUrl });
                     }
