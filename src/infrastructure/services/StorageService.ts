@@ -54,11 +54,16 @@ export class StorageService {
         }
         const buffer = Buffer.from(await response.arrayBuffer());
 
+        // Infer content type from file extension
+        const ext = destKey.split('.').pop()?.toLowerCase() || '';
+        const mimeType = this.getMimeType(ext);
+
         // Upload to new location
         await this.s3.send(new PutObjectCommand({
             Bucket: this.bucketName,
             Key: destKey,
             Body: buffer,
+            ContentType: mimeType,
         }));
 
         // Generate new signed URL
@@ -117,5 +122,19 @@ export class StorageService {
         } catch {
             return null;
         }
+    }
+
+    private getMimeType(ext: string): string {
+        const mimeTypes: Record<string, string> = {
+            png: 'image/png',
+            jpg: 'image/jpeg',
+            jpeg: 'image/jpeg',
+            gif: 'image/gif',
+            webp: 'image/webp',
+            pdf: 'application/pdf',
+            svg: 'image/svg+xml',
+            bmp: 'image/bmp',
+        };
+        return mimeTypes[ext] || 'application/octet-stream';
     }
 }
