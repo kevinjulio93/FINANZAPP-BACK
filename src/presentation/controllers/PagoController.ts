@@ -7,6 +7,8 @@ import { StorageService } from "../../infrastructure/services/StorageService";
 import { OwnershipValidator } from "../../utils/ownership.validator";
 import { t } from "../../infrastructure/i18n/translate";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { ServiceModel } from "../../infrastructure/models/Service.model";
+import { CategoryModel } from "../../infrastructure/models/Catergory.model";
 
 // AuthRequest is now imported from middleware
 
@@ -61,6 +63,23 @@ export class PagoController {
                 ...data,
                 fechaPago: new Date(data.fechaPago),
             });
+
+            // If there's a supportUrl, move it to structured path with month
+            if (data.supportUrl) {
+                try {
+                    const service = await ServiceModel.findById(data.serviceId).lean();
+                    if (service) {
+                        const category = await CategoryModel.findById(service.categoryId).lean();
+                        const categoryName = category ? category.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'unknown';
+                        const serviceName = service.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+                        const destKey = `${categoryName}/${data.año}/${serviceName}/${data.mes}/${pago._id}`;
+                        const newUrl = await this.storageService.moveFile(data.supportUrl, destKey);
+                        await this.pagoService.updatePago(pago._id.toString(), { supportUrl: newUrl });
+                    }
+                } catch (error) {
+                    console.error('Failed to move support file to structured path:', error);
+                }
+            }
 
             return res.status(201).json(pago);
         } catch (error: any) {

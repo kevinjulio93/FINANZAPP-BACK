@@ -101,7 +101,7 @@ export class BulkSupportService {
                         const category = await CategoryModel.findById(service.categoryId).lean();
                         const categoryName = category ? category.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'unknown';
                         const serviceName = service.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        const destKey = `${categoryName}/${support.suggestedYear}/${serviceName}/${support.originalName}`;
+                        const destKey = `${categoryName}/${support.suggestedYear}/${serviceName}/${support.suggestedMonth}/${support.originalName}`;
                         supportUrl = await this.storageService.moveFile(support.receiptUrl, destKey);
                     }
                 } catch (error) {
