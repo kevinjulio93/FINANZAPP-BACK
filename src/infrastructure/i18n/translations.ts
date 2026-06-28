@@ -43,6 +43,9 @@ export const translations = {
             supportsConfirmed: "Supports confirmed successfully",
             internalError: "Internal server error"
         },
+        files: {
+            fileDeleted: "File deleted successfully",
+        },
         auth: {
             invalidCredentials: "Invalid email or password",
             tokenExpired: "Session expired",
@@ -98,6 +101,9 @@ export const translations = {
             invalidSupports: "Datos de soportes inválidos",
             supportsConfirmed: "Soportes confirmados exitosamente",
             internalError: "Error interno del servidor"
+        },
+        files: {
+            fileDeleted: "Archivo eliminado exitosamente",
         },
         auth: {
             invalidCredentials: "Correo o contraseña inválidos",
