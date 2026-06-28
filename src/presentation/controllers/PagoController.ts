@@ -64,25 +64,6 @@ export class PagoController {
                 fechaPago: new Date(data.fechaPago),
             });
 
-            // If there's a supportUrl, move it to structured path with month
-            if (data.supportUrl) {
-                try {
-                    const service = await ServiceModel.findById(data.serviceId).lean();
-                    if (service) {
-                        const category = await CategoryModel.findById(service.categoryId).lean();
-                        const categoryName = category ? category.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'unknown';
-                        const serviceName = service.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        // Extract original filename from the signed URL (remove timestamp prefix)
-                        const originalName = this.storageService.extractFileNameFromUrl(data.supportUrl) || pago._id.toString();
-                        const destKey = `${categoryName}/${data.año}/${serviceName}/${data.mes}/${originalName}`;
-                        const newUrl = await this.storageService.moveFile(data.supportUrl, destKey);
-                        await this.pagoService.updatePago(pago._id.toString(), { supportUrl: newUrl });
-                    }
-                } catch (error) {
-                    console.error('Failed to move support file to structured path:', error);
-                }
-            }
-
             return res.status(201).json(pago);
         } catch (error: any) {
             const lang = req.user?.language || 'en';
@@ -404,11 +385,41 @@ export class PagoController {
     async uploadSupport(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const lang = req.user?.language || 'en';
+            const userId = req.user!.id;
             if (!req.file) {
                 return res.status(400).json({ message: t(lang, "errors.noFileUploaded") });
             }
 
-            const url = await this.storageService.uploadFile(req.file as any);
+            const { serviceId, mes, año } = req.query;
+            if (!serviceId || !mes || !año) {
+                return res.status(400).json({ message: t(lang, "errors.requiredFields") });
+            }
+
+            // Verify ownership
+            try {
+                await OwnershipValidator.validateServiceAndCategory(
+                    this.serviceService,
+                    this.categoryService,
+                    serviceId as string,
+                    userId
+                );
+            } catch (validationError: any) {
+                return res.status(404).json({ message: t(lang, validationError.message) });
+            }
+
+            // Get service and category for structured path
+            const service = await ServiceModel.findById(serviceId as string).lean();
+            if (!service) {
+                return res.status(404).json({ message: t(lang, "errors.serviceNotFound") });
+            }
+            const category = await CategoryModel.findById(service.categoryId).lean();
+            const categoryName = category ? category.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'unknown';
+            const serviceName = service.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+            // Upload directly to structured path: {categoryName}/{año}/{serviceName}/{mes}/{originalName}
+            const destKey = `${categoryName}/${año}/${serviceName}/${mes}/${req.file.originalname}`;
+            const url = await this.storageService.uploadToKey(req.file.buffer, destKey, req.file.mimetype);
+
             return res.status(200).json({ url });
         } catch (error) {
             const lang = req.user?.language || 'en';

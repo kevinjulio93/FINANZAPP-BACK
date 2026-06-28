@@ -42,6 +42,24 @@ export class StorageService {
     }
 
     /**
+     * Uploads a buffer directly to an exact key path (no timestamp prefix).
+     * Used for uploading directly to structured paths like {category}/{year}/{service}/{month}/{file}.
+     */
+    async uploadToKey(buffer: Buffer, key: string, mimeType: string): Promise<string> {
+        await this.s3.send(new PutObjectCommand({
+            Bucket: this.bucketName,
+            Key: key,
+            Body: buffer,
+            ContentType: mimeType,
+        }));
+
+        return getSignedUrl(this.s3, new GetObjectCommand({
+            Bucket: this.bucketName,
+            Key: key,
+        }), { expiresIn: 86400 });
+    }
+
+    /**
      * Copies a file within R2 to a new structured path and deletes the original.
      * Uses CopyObjectCommand (server-side copy, no download/re-upload).
      * Returns the new signed URL for the moved file.
