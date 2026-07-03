@@ -141,7 +141,7 @@ export class ServiceController {
         try {
             const userId = req.user!.id;
             const serviceId = req.params.id;
-            const { name, montoEstimado, categoryId } = req.body;
+            const { name, montoEstimado, categoryId, fechaLimitePago, fechaUltimoPago, diasRecordatorio } = req.body;
 
             const service = await this.serviceService.getServiceById(serviceId);
             if (!service) {
@@ -159,6 +159,9 @@ export class ServiceController {
                 name,
                 montoEstimado,
                 categoryId,
+                fechaLimitePago: fechaLimitePago ? new Date(fechaLimitePago) : undefined,
+                fechaUltimoPago: fechaUltimoPago ? new Date(fechaUltimoPago) : undefined,
+                diasRecordatorio,
             });
 
             return res.status(200).json(updatedService);

@@ -1,22 +1,29 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const R2_ACCOUNT_ID = '505d2a36e8a47ba9a16e346065eea635';
+const R2_ACCOUNT_ID = (process.env.R2_ACCOUNT_ID || '505d2a36e8a47ba9a16e346065eea635').trim();
+const R2_REGION = (process.env.R2_REGION || 'auto').trim();
 
 export class StorageService {
     private s3: S3Client;
     private bucketName: string;
 
     constructor() {
+        const accessKeyId = (process.env.R2_ACCESS_KEY_ID || '').trim();
+        const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || '').trim();
+
         this.s3 = new S3Client({
-            region: 'auto',
+            region: R2_REGION,
             endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+            forcePathStyle: true,
+            requestChecksumCalculation: 'WHEN_REQUIRED',
+            responseChecksumValidation: 'WHEN_REQUIRED',
             credentials: {
-                accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+                accessKeyId,
+                secretAccessKey,
             },
         });
-        this.bucketName = process.env.R2_BUCKET_NAME || 'finanzapp';
+        this.bucketName = (process.env.R2_BUCKET_NAME || 'finanzapp').trim();
     }
 
     async uploadFile(file: Express.Multer.File, folder: string = 'soportes'): Promise<string> {
