@@ -20,7 +20,7 @@ import { SchedulerService } from './infrastructure/services/SchedulerService';
 import { NotificationService } from './application/services/NotificationService';
 import { UserRepository } from './domain/repositories/UserRepository';
 import { AIMessageService } from './application/services/AIMessageService';
-import { WhatsAppService } from './infrastructure/services/WhatsAppService';
+import { UltraMsgService } from './infrastructure/services/UltraMsgService';
 import { OllamaService } from './infrastructure/services/OllamaService';
 
 const app = express();
@@ -30,8 +30,8 @@ const PORT = process.env.PORT || 3000;
 const userRepository = new UserRepository();
 const ollamaService = new OllamaService();
 const aiMessageService = new AIMessageService(ollamaService);
-const whatsappService = new WhatsAppService();
-const notificationService = new NotificationService(userRepository, aiMessageService, whatsappService);
+const ultraMsgService = new UltraMsgService();
+const notificationService = new NotificationService(userRepository, aiMessageService, ultraMsgService);
 const schedulerService = new SchedulerService(notificationService);
 
 schedulerService.start();

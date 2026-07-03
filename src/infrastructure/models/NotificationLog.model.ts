@@ -4,6 +4,7 @@ import { INotificationLog } from '../../domain/entities/NotificationLog';
 const NotificationLogSchema = new mongoose.Schema<INotificationLog>({
     userId: { type: String, required: true, index: true },
     serviceId: { type: String, required: true, index: true },
+    tipo: { type: String, enum: ['payment_reminder', 'missing_date_reminder'], default: 'payment_reminder' },
     fechaLimite: { type: Date, required: true },
     diasAntes: { type: Number, required: true },
     mensajeEnviado: { type: String, required: true },
