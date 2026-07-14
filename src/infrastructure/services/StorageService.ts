@@ -140,17 +140,28 @@ export class StorageService {
 
     /**
      * Extracts the S3 object key from a signed R2 URL.
-     * URL format: https://{accountId}.r2.cloudflarestorage.com/{bucket}/{key}?...
+     * Handles both virtual-hosted style (bucket in hostname) and path-style (bucket in path).
+     *
+     * Virtual-hosted: https://{bucket}.{accountId}.r2.cloudflarestorage.com/{key}?...
+     * Path-style:      https://{accountId}.r2.cloudflarestorage.com/{bucket}/{key}?...
      */
     public extractKeyFromUrl(url: string): string | null {
         try {
             const urlObj = new URL(url);
+            const hostname = urlObj.hostname;
             const pathParts = urlObj.pathname.split('/').filter(Boolean);
-            // pathParts: [bucketName, folder, filename]
-            // The key is everything after the bucket name
+
+            // Detect virtual-hosted style: hostname starts with bucket name
+            if (hostname.startsWith(this.bucketName + '.')) {
+                // Virtual-hosted: key is the full path
+                return pathParts.join('/');
+            }
+
+            // Path-style: first segment is bucket, rest is key
             if (pathParts.length >= 2) {
                 return pathParts.slice(1).join('/');
             }
+
             return null;
         } catch {
             return null;
