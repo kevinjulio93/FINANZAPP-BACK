@@ -151,15 +151,18 @@ export class StorageService {
             const hostname = urlObj.hostname;
             const pathParts = urlObj.pathname.split('/').filter(Boolean);
 
+            // Decode each path segment (URLs have percent-encoded chars like %20 for spaces)
+            const decodedParts = pathParts.map(p => decodeURIComponent(p));
+
             // Detect virtual-hosted style: hostname starts with bucket name
             if (hostname.startsWith(this.bucketName + '.')) {
-                // Virtual-hosted: key is the full path
-                return pathParts.join('/');
+                // Virtual-hosted: key is the full decoded path
+                return decodedParts.join('/');
             }
 
             // Path-style: first segment is bucket, rest is key
-            if (pathParts.length >= 2) {
-                return pathParts.slice(1).join('/');
+            if (decodedParts.length >= 2) {
+                return decodedParts.slice(1).join('/');
             }
 
             return null;
