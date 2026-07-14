@@ -3,8 +3,11 @@ import { IFileRepository, FileEntry } from "../../domain/repositories/Interfaces
 import { PagoMensualModel } from "../models/PagoMensual.model";
 import { ServiceModel } from "../models/Service.model";
 import { CategoryModel } from "../models/Catergory.model";
+import { StorageService } from "../services/StorageService";
 
 export class FileRepository implements IFileRepository {
+    constructor(private storageService: StorageService) {}
+
     async getFilesByUserId(userId: string): Promise<FileEntry[]> {
         const userObjectId = new mongoose.Types.ObjectId(userId);
 
@@ -45,13 +48,19 @@ export class FileRepository implements IFileRepository {
 
             const categoryName = categoryMap.get(svc.categoryId) || "unknown";
 
+            // Extract key from the stored (possibly expired) URL and generate a fresh one
+            const key = this.storageService.extractKeyFromUrl(pago.supportUrl!);
+            const freshUrl = key
+                ? await this.storageService.getSignedUrl(key)
+                : pago.supportUrl!;
+
             // Extract original filename from URL or use a default
             const name = this.extractFileName(pago.supportUrl!, pago._id.toString());
 
             entries.push({
                 pagoId: pago._id.toString(),
                 name,
-                url: pago.supportUrl!,
+                url: freshUrl,
                 amount: pago.valorPagado,
                 date: pago.fechaPago?.toISOString() || new Date().toISOString(),
                 categoryName: categoryName.replace(/[^a-zA-Z0-9_-]/g, '_'),

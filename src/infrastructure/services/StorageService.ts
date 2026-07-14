@@ -128,10 +128,21 @@ export class StorageService {
     }
 
     /**
+     * Generates a fresh signed URL for a given object key.
+     * Used to refresh expired URLs when serving files to the frontend.
+     */
+    async getSignedUrl(key: string): Promise<string> {
+        return getSignedUrl(this.s3, new GetObjectCommand({
+            Bucket: this.bucketName,
+            Key: key,
+        }), { expiresIn: 86400 });
+    }
+
+    /**
      * Extracts the S3 object key from a signed R2 URL.
      * URL format: https://{accountId}.r2.cloudflarestorage.com/{bucket}/{key}?...
      */
-    private extractKeyFromUrl(url: string): string | null {
+    public extractKeyFromUrl(url: string): string | null {
         try {
             const urlObj = new URL(url);
             const pathParts = urlObj.pathname.split('/').filter(Boolean);

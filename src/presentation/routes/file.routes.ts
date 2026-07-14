@@ -8,8 +8,8 @@ import { AuthenticationToken } from "../middleware/auth.middleware";
 const router: Router = Router();
 
 // Initialize dependencies
-const fileRepository = new FileRepository();
 const storageService = new StorageService();
+const fileRepository = new FileRepository(storageService);
 const fileService = new FileService(fileRepository, storageService);
 const fileController = new FileController(fileService);
 
