@@ -22,6 +22,17 @@ FinanzApp sin registrarse.
 - En el chat, la demo **no recibe la herramienta `create_services`**, así que no puede
   crear servicios ni siquiera a través del asistente.
 
+## Límites de uso
+
+| Acción | Límite | Código |
+| --- | --- | --- |
+| `POST /api/auth/demo` | 10 por IP cada 10 min | `DEMO_RATE_LIMITED` |
+| Chat de la demo | 40 mensajes por IP cada 30 min | `DEMO_CHAT_LIMITED` |
+
+El sitio está detrás de **Cloudflare**, así que la IP se toma de `cf-connecting-ip`
+(si se usa `x-forwarded-for`, cada petición llega con una IP de borde distinta y el
+límite nunca se cumple).
+
 ## Volver a sembrar los datos
 
 El seed es idempotente: borra y recrea todo lo del usuario demo.
