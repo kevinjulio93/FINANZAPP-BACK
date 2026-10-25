@@ -3,6 +3,7 @@ import z from 'zod';
 import { AuthService } from '../../application/services/AuthService';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { t } from '../../infrastructure/i18n/translate';
+import { checkRateLimit, clientIp, DEMO_LOGIN_LIMIT } from '../../utils/rate-limit';
 
 const registerSchema = z.object({ name: z.string(), email: z.string().email(), password: z.string().min(6) });
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(6) });
@@ -37,6 +38,13 @@ export class AuthController {
 
     async demoLogin(req: Request, res: Response): Promise<Response> {
         try {
+            if (!checkRateLimit(`demo-login:${clientIp(req)}`, DEMO_LOGIN_LIMIT.limit, DEMO_LOGIN_LIMIT.windowMs)) {
+                return res.status(429).json({
+                    message: 'Demasiados accesos a la demo desde esta conexión. Intenta más tarde.',
+                    code: 'DEMO_RATE_LIMITED',
+                });
+            }
+
             const result = await this.authService.demoLogin();
             return res.status(200).json(result);
         } catch (error) {

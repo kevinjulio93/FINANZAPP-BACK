@@ -4,6 +4,7 @@ import { ChatService } from "../../application/services/ChatService";
 import { t } from "../../infrastructure/i18n/translate";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { isDemoEmail } from "../../config/demo";
+import { checkRateLimit, clientIp, DEMO_CHAT_LIMIT } from "../../utils/rate-limit";
 
 export class ChatController {
     private chatService: ChatService;
@@ -20,6 +21,13 @@ export class ChatController {
             if (!message) {
                 const lang = req.user?.language || 'en';
                 return res.status(400).json({ message: t(lang, "errors.chatMessageRequired") });
+            }
+
+            if (isDemoEmail(req.user?.email) && !checkRateLimit(`demo-chat:${clientIp(req)}`, DEMO_CHAT_LIMIT.limit, DEMO_CHAT_LIMIT.windowMs)) {
+                return res.status(429).json({
+                    message: 'Alcanzaste el límite de mensajes de la demo (40 cada 30 minutos).',
+                    code: 'DEMO_CHAT_LIMITED',
+                });
             }
 
             const response = await this.chatService.processMessage(userId, message, history, {
