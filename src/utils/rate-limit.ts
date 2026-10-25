@@ -22,12 +22,24 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): bo
     return entry.count <= limit;
 }
 
-/** IP real del cliente (detrás de Traefik/Dokploy). */
+/**
+ * IP real del cliente.
+ * Orden: Cloudflare (cf-connecting-ip) → X-Real-IP → X-Forwarded-For → req.ip.
+ * Cloudflare envía cada petición desde una IP de borde distinta, así que
+ * leer X-Forwarded-For daría una clave nueva por request y el límite no aplicaría.
+ */
 export function clientIp(req: Request): string {
+    const cf = req.headers['cf-connecting-ip'];
+    if (typeof cf === 'string' && cf.trim().length > 0) return cf.trim();
+
+    const real = req.headers['x-real-ip'];
+    if (typeof real === 'string' && real.trim().length > 0) return real.trim();
+
     const forwarded = req.headers['x-forwarded-for'];
     if (typeof forwarded === 'string' && forwarded.length > 0) {
         return forwarded.split(',')[0].trim();
     }
+
     return req.ip || 'unknown';
 }
 
