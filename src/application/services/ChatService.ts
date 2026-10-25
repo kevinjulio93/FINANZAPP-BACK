@@ -30,7 +30,12 @@ export class ChatService {
         this.dashboardRepository = dashboardRepository;
     }
 
-    async processMessage(userId: string, message: string, history: any[] = []): Promise<any> {
+    async processMessage(
+        userId: string,
+        message: string,
+        history: any[] = [],
+        options: { readOnly?: boolean } = {}
+    ): Promise<any> {
         // Define available tools
         const tools = [
             {
@@ -151,6 +156,11 @@ export class ChatService {
             }
         ];
 
+        // La cuenta demo es de solo lectura: no puede crear servicios desde el chat
+        const activeTools = options.readOnly
+            ? tools.filter((t: any) => t.function?.name !== 'create_services')
+            : tools;
+
         // 0. Fetch financial context
         const now = new Date();
         const currentMonth = now.getMonth() + 1;
@@ -170,7 +180,7 @@ export class ChatService {
         }
 
         // 1. Initial call to LLM
-        let aiResponse = await this.openAIService.generateResponse(userId, message, { history, financialContext }, tools);
+        let aiResponse = await this.openAIService.generateResponse(userId, message, { history, financialContext }, activeTools);
 
         // 2. Handle tool calls if any
         if (aiResponse.tool_calls && aiResponse.tool_calls.length > 0) {
@@ -303,14 +313,22 @@ export class ChatService {
                 ...toolResults // Tool outputs
             ];
 
-            aiResponse = await this.openAIService.continueConversation(userId, messagesForFollowUp, tools);
+            aiResponse = await this.openAIService.continueConversation(userId, messagesForFollowUp, activeTools);
         }
 
         return aiResponse;
     }
 
-    async *processMessageStream(userId: string, message: string, history: any[] = []): AsyncGenerator<string, void, unknown> {
-        const tools = this.getTools();
+    async *processMessageStream(
+        userId: string,
+        message: string,
+        history: any[] = [],
+        options: { readOnly?: boolean } = {}
+    ): AsyncGenerator<string, void, unknown> {
+        const allTools = this.getTools();
+        const tools = options.readOnly
+            ? allTools.filter((t: any) => t.function?.name !== 'create_services')
+            : allTools;
         const { currentMonth, currentYear, financialContext } = await this.getFinancialContext(userId);
 
         // 1. Initial call to LLM (non-streaming to detect tool calls)

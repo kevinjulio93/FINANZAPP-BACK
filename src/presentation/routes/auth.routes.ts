@@ -69,6 +69,20 @@ router.post('/login', (req, res) => authController.login(req, res));
 
 /**
  * @swagger
+ * /api/auth/demo:
+ *   post:
+ *     summary: Acceso a la cuenta demo (solo lectura)
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Token de la cuenta demo
+ *       503:
+ *         description: Cuenta demo no disponible
+ */
+router.post('/demo', (req, res) => authController.demoLogin(req, res));
+
+/**
+ * @swagger
  * /api/auth/me:
  *   get:
  *     summary: Obtener usuario actual

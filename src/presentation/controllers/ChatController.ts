@@ -3,6 +3,7 @@ import { ChatService } from "../../application/services/ChatService";
 
 import { t } from "../../infrastructure/i18n/translate";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { isDemoEmail } from "../../config/demo";
 
 export class ChatController {
     private chatService: ChatService;
@@ -21,7 +22,9 @@ export class ChatController {
                 return res.status(400).json({ message: t(lang, "errors.chatMessageRequired") });
             }
 
-            const response = await this.chatService.processMessage(userId, message, history);
+            const response = await this.chatService.processMessage(userId, message, history, {
+                readOnly: isDemoEmail(req.user?.email),
+            });
             return res.status(200).json(response);
         } catch (error: any) {
             const lang = req.user?.language || 'en';
@@ -48,7 +51,9 @@ export class ChatController {
             res.setHeader('X-Accel-Buffering', 'no');
             res.flushHeaders();
 
-            const stream = this.chatService.processMessageStream(userId, message, history);
+            const stream = this.chatService.processMessageStream(userId, message, history, {
+                readOnly: isDemoEmail(req.user?.email),
+            });
 
             for await (const chunk of stream) {
                 res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);

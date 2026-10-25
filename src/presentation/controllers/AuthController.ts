@@ -35,6 +35,17 @@ export class AuthController {
         }
     }
 
+    async demoLogin(req: Request, res: Response): Promise<Response> {
+        try {
+            const result = await this.authService.demoLogin();
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(503).json({
+                message: 'La cuenta demo no está disponible en este momento.',
+            });
+        }
+    }
+
     async getCurrentUser(req: AuthRequest, res: Response): Promise<Response> {
         try {
             const userId = req.user?.id;

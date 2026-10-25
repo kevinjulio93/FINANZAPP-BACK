@@ -4,6 +4,7 @@ import { IUserRepository } from '../../domain/repositories/Interfaces/IUserRepos
 import { INewUser } from '../../domain/entities/User';
 import { OAuth2Client } from 'google-auth-library';
 import { WhatsAppService } from '../../infrastructure/services/WhatsAppService';
+import { DEMO_USER_EMAIL, isDemoEmail } from '../../config/demo';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -68,6 +69,40 @@ export class AuthService {
     };
   }
 
+  /**
+   * Login de la cuenta demo pública.
+   * No requiere contraseña: el usuario demo es de solo lectura y su acceso
+   * se limita a un token corto. La escritura la bloquea DemoReadOnly.
+   */
+  async demoLogin() {
+    const user = await this.userRepository.getUserByEmail(DEMO_USER_EMAIL);
+    if (!user) {
+      throw new Error('errors.demoNotAvailable');
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, language: user.language || 'es' },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '8h' }
+    );
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        whatsappPhone: user.whatsappPhone,
+        whatsappVerified: user.whatsappVerified,
+        monthlyBudget: user.monthlyBudget || 0,
+        montosOcultos: user.montosOcultos || false,
+        language: user.language || 'es',
+        createdAt: user.createdAt,
+        isDemo: true,
+      },
+    };
+  }
+
   async getCurrentUser(userId: string) {
     const user = await this.userRepository.getUserById(userId);
     if (!user) {
@@ -85,6 +120,7 @@ export class AuthService {
       language: user.language || 'en',
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      isDemo: isDemoEmail(user.email),
     };
   }
 

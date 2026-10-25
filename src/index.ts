@@ -16,6 +16,7 @@ import exportImportRoutes from './presentation/routes/export-import.routes';
 import bulkSupportRoutes from './presentation/routes/bulk-support.routes';
 import fileRoutes from './presentation/routes/file.routes';
 import { setupSwagger } from './config/swagger';
+import { DemoReadOnly } from './presentation/middleware/demo.middleware';
 import { SchedulerService } from './infrastructure/services/SchedulerService';
 import { NotificationService } from './application/services/NotificationService';
 import { UserRepository } from './domain/repositories/UserRepository';
@@ -44,6 +45,9 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// La cuenta demo es de solo lectura: bloquea escrituras antes de llegar a las rutas
+app.use(DemoReadOnly);
 
 // Swagger documentation
 setupSwagger(app);
