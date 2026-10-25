@@ -29,9 +29,26 @@ const API_KEY = process.env.GEMINI_API_KEY || '';
 const MAX_HISTORY = 20;
 const CONNECTION_ERROR = 'Lo siento, hubo un error al conectar con el asistente.';
 
-const auth = new GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-});
+const SCOPES = ['https://www.googleapis.com/auth/cloud-platform'];
+
+/**
+ * Credenciales de Google Cloud, por orden de prioridad:
+ *  1. GOOGLE_SERVICE_ACCOUNT_JSON (JSON crudo o base64) — pensado para contenedores
+ *  2. GOOGLE_APPLICATION_CREDENTIALS (ruta a un archivo)
+ *  3. ADC / metadata server
+ */
+function buildAuth(): GoogleAuth {
+    const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    if (inline && inline.trim().length > 0) {
+        const raw = inline.trim().startsWith('{')
+            ? inline
+            : Buffer.from(inline, 'base64').toString('utf8');
+        return new GoogleAuth({ credentials: JSON.parse(raw), scopes: SCOPES });
+    }
+    return new GoogleAuth({ scopes: SCOPES });
+}
+
+const auth = buildAuth();
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
