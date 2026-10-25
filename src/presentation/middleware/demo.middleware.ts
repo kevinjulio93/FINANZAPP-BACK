@@ -60,13 +60,65 @@ function targetUserId(req: Request): string | undefined {
  * - También bloquea escrituras sin token cuyo `userId` apunte al usuario demo
  *   (algunas rutas del backend no exigen autenticación).
  */
+
+/** Límite simple en memoria (una sola instancia del backend). */
+const buckets = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
+    const now = Date.now();
+
+    if (buckets.size > 5000) {
+        for (const [k, v] of buckets) {
+            if (v.resetAt < now) buckets.delete(k);
+        }
+    }
+
+    const entry = buckets.get(key);
+    if (!entry || entry.resetAt < now) {
+        buckets.set(key, { count: 1, resetAt: now + windowMs });
+        return true;
+    }
+
+    entry.count += 1;
+    return entry.count <= limit;
+}
+
+function clientIp(req: Request): string {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.length > 0) {
+        return forwarded.split(',')[0].trim();
+    }
+    return req.ip || 'unknown';
+}
+
 export const DemoReadOnly = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // Límite de accesos a la demo por IP (evita minar créditos de IA)
+        if (req.method === 'POST' && req.path === '/api/auth/demo') {
+            if (!checkRateLimit(`demo-login:${clientIp(req)}`, 10, 10 * 60 * 1000)) {
+                return res.status(429).json({
+                    message: 'Demasiados accesos a la demo desde esta conexión. Intenta más tarde.',
+                    code: 'DEMO_RATE_LIMITED',
+                });
+            }
+        }
+
         if (SAFE_METHODS.has(req.method)) return next();
 
         const isAllowed = ALLOWED_WRITES.some(
             (r) => r.method === req.method && req.path.startsWith(r.path),
         );
+
+        // Tope de mensajes de IA para la cuenta demo
+        if (isAllowed && req.path.startsWith('/api/chat') && tokenBelongsToDemo(req)) {
+            if (!checkRateLimit(`demo-chat:${clientIp(req)}`, 40, 30 * 60 * 1000)) {
+                return res.status(429).json({
+                    message: 'Alcanzaste el límite de mensajes de la demo (40 cada 30 minutos).',
+                    code: 'DEMO_CHAT_LIMITED',
+                });
+            }
+        }
+
         if (isAllowed) return next();
 
         if (tokenBelongsToDemo(req)) {

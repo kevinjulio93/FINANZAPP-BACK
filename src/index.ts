@@ -27,6 +27,9 @@ import { OllamaService } from './infrastructure/services/OllamaService';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Detrás de Traefik (Dokploy): permite leer la IP real del cliente
+app.set('trust proxy', true);
+
 // Initialize Scheduler
 const userRepository = new UserRepository();
 const ollamaService = new OllamaService();
