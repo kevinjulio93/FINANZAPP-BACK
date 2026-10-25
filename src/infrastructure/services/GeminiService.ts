@@ -183,11 +183,20 @@ export class GeminiService implements IOpenAIService {
                 try {
                     payload = typeof msg.content === 'string' ? JSON.parse(msg.content) : msg.content;
                 } catch {
-                    payload = { result: msg.content };
+                    payload = msg.content;
                 }
                 contents.push({
                     role: 'user',
-                    parts: [{ functionResponse: { name: msg.name, response: payload } }],
+                    parts: [
+                        {
+                            functionResponse: {
+                                name: msg.name,
+                                // Gemini exige un objeto (Struct): si el tool devolvió
+                                // un array o un escalar, se envuelve en { result }.
+                                response: toStruct(payload),
+                            },
+                        },
+                    ],
                 });
                 continue;
             }
@@ -367,6 +376,14 @@ export class GeminiService implements IOpenAIService {
             yield CONNECTION_ERROR;
         }
     }
+}
+
+/** Gemini exige que `functionResponse.response` sea un objeto. */
+function toStruct(payload: any): Record<string, any> {
+    if (payload === null || payload === undefined) return { result: null };
+    if (Array.isArray(payload)) return { result: payload };
+    if (typeof payload !== 'object') return { result: payload };
+    return payload;
 }
 
 function safeJson(value: string): any {
