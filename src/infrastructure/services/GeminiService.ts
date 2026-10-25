@@ -114,6 +114,21 @@ function toGeminiTools(tools?: any[]): any[] | undefined {
 }
 
 export class GeminiService implements IOpenAIService {
+    /**
+     * Gemini no guarda estado entre llamadas: en la segunda ronda de una
+     * conversación con herramientas hay que reenviar el systemInstruction,
+     * o el modelo pierde la persona y el contexto financiero.
+     */
+    private contexts = new Map<string, any>();
+
+    private rememberContext(userId: string, context: any): void {
+        if (this.contexts.size > 200) {
+            const first = this.contexts.keys().next().value;
+            if (first) this.contexts.delete(first);
+        }
+        this.contexts.set(userId, context);
+    }
+
     private endpoint(action: string): string {
         if (PROVIDER === 'studio') {
             return `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:${action}`;
@@ -159,6 +174,9 @@ export class GeminiService implements IOpenAIService {
         }
         if (context?.knowledge) {
             text += `\n\n📚 CONOCIMIENTO DE FINANZAPP:\n${context.knowledge}`;
+        }
+        if (context?.readOnly) {
+            text += `\n\n🔒 MODO DEMO (SOLO LECTURA): esta cuenta es una demostración pública. Puedes consultar y analizar datos, pero NO puedes crear, editar ni eliminar servicios, pagos, categorías ni créditos. Si el usuario te lo pide, explícale amablemente que la demo es de solo lectura y que cree su propia cuenta para modificarla.`;
         }
         return { parts: [{ text }] };
     }
@@ -229,7 +247,9 @@ export class GeminiService implements IOpenAIService {
 
     private buildBody(message: string, context: any, tools?: any[]): any {
         const contents = this.historyToContents(context?.history || []);
-        contents.push({ role: 'user', parts: [{ text: message }] });
+        if (message && message.trim().length > 0) {
+            contents.push({ role: 'user', parts: [{ text: message }] });
+        }
 
         const body: any = {
             contents,
@@ -293,6 +313,7 @@ export class GeminiService implements IOpenAIService {
 
     async generateResponse(userId: string, message: string, context?: any, tools?: any[]): Promise<any> {
         try {
+            this.rememberContext(userId, context);
             const data = await this.call('generateContent', this.buildBody(message, context, tools));
             return this.parseResponse(data);
         } catch (error) {
@@ -306,7 +327,7 @@ export class GeminiService implements IOpenAIService {
             const contents = this.historyToContents(messages);
             const body: any = {
                 contents,
-                systemInstruction: this.buildSystemInstruction(undefined),
+                systemInstruction: this.buildSystemInstruction(this.contexts.get(userId)),
                 generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
             };
             const geminiTools = toGeminiTools(tools);
@@ -327,6 +348,7 @@ export class GeminiService implements IOpenAIService {
         tools?: any[]
     ): AsyncGenerator<string, void, unknown> {
         try {
+            this.rememberContext(userId, { ...(this.contexts.get(userId) || {}), ...(context || {}) });
             const body = this.buildBody(message, context, tools);
 
             const response = await fetch(this.url('streamGenerateContent'), {

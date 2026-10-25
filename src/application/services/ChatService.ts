@@ -180,10 +180,15 @@ export class ChatService {
         }
 
         // 1. Initial call to LLM
-        let aiResponse = await this.openAIService.generateResponse(userId, message, { history, financialContext }, activeTools);
+        let aiResponse = await this.openAIService.generateResponse(userId, message, { history, financialContext, readOnly: options.readOnly }, activeTools);
 
-        // 2. Handle tool calls if any
-        if (aiResponse.tool_calls && aiResponse.tool_calls.length > 0) {
+        // 2. Ejecutar herramientas (varias rondas: Gemini y otros modelos encadenan llamadas)
+        const MAX_TOOL_ROUNDS = 3;
+        let conversation: any[] = [...(history || []), { role: "user", content: message }];
+        let round = 0;
+
+        while (aiResponse.tool_calls && aiResponse.tool_calls.length > 0 && round < MAX_TOOL_ROUNDS) {
+            round++;
             const toolResults = [];
 
             for (const toolCall of aiResponse.tool_calls) {
@@ -305,15 +310,9 @@ export class ChatService {
                 });
             }
 
-            // 3. Second call to LLM with tool results
-            const messagesForFollowUp = [
-                ...(history || []),
-                { role: "user", content: message },
-                aiResponse, // Assistant message requesting tool call
-                ...toolResults // Tool outputs
-            ];
-
-            aiResponse = await this.openAIService.continueConversation(userId, messagesForFollowUp, activeTools);
+            // 3. Siguiente llamada al LLM con los resultados de las herramientas
+            conversation = [...conversation, aiResponse, ...toolResults];
+            aiResponse = await this.openAIService.continueConversation(userId, conversation, activeTools);
         }
 
         return aiResponse;
@@ -332,10 +331,15 @@ export class ChatService {
         const { currentMonth, currentYear, financialContext } = await this.getFinancialContext(userId);
 
         // 1. Initial call to LLM (non-streaming to detect tool calls)
-        let aiResponse = await this.openAIService.generateResponse(userId, message, { history, financialContext }, tools);
+        let aiResponse = await this.openAIService.generateResponse(userId, message, { history, financialContext, readOnly: options.readOnly }, tools);
 
-        // 2. Handle tool calls if any
-        if (aiResponse.tool_calls && aiResponse.tool_calls.length > 0) {
+        // 2. Ejecutar herramientas (varias rondas antes de responder)
+        const MAX_TOOL_ROUNDS = 3;
+        let conversation: any[] = [...(history || []), { role: "user", content: message }];
+        let round = 0;
+
+        while (aiResponse.tool_calls && aiResponse.tool_calls.length > 0 && round < MAX_TOOL_ROUNDS) {
+            round++;
             const toolResults = [];
 
             for (const toolCall of aiResponse.tool_calls) {
@@ -361,24 +365,24 @@ export class ChatService {
                 });
             }
 
-            // 3. Stream the follow-up response
-            const messagesForFollowUp = [
-                ...(history || []),
-                { role: "user", content: message },
-                aiResponse,
-                ...toolResults
-            ];
+            conversation = [...conversation, aiResponse, ...toolResults];
+            aiResponse = await this.openAIService.continueConversation(userId, conversation, tools);
+        }
 
-            const stream = this.openAIService.generateResponseStream(userId, "", { history: messagesForFollowUp }, tools);
-            for await (const chunk of stream) {
-                yield chunk;
-            }
-        } else {
-            // No tool calls, stream the response directly from the model
-            const stream = this.openAIService.generateResponseStream(userId, message, { history, financialContext }, tools);
-            for await (const chunk of stream) {
-                yield chunk;
-            }
+        // Si el modelo ya respondió en texto, se emite tal cual.
+        if (aiResponse.content && (!aiResponse.tool_calls || aiResponse.tool_calls.length === 0)) {
+            yield aiResponse.content;
+            return;
+        }
+
+        const stream = this.openAIService.generateResponseStream(
+            userId,
+            round === 0 ? message : "",
+            { history: round === 0 ? history : conversation, financialContext },
+            tools
+        );
+        for await (const chunk of stream) {
+            yield chunk;
         }
     }
 
